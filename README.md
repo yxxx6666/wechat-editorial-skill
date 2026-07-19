@@ -26,21 +26,60 @@
 
 ---
 
+## 实际案例
+
+以下是一篇公众号文章使用本 skill 排版后的真实手机端效果（6 张截图，点击可放大）：
+
+<table>
+  <tr>
+    <td width="33%" align="center"><a href="examples/screenshots/case-01.jpg"><img src="examples/screenshots/case-01.jpg" width="240"></a><br><sub>01 大序号标题 + 原文色块 + 绿色高亮</sub></td>
+    <td width="33%" align="center"><a href="examples/screenshots/case-02.jpg"><img src="examples/screenshots/case-02.jpg" width="240"></a><br><sub>02 绿色高亮 + 红色删除线 + 配图</sub></td>
+    <td width="33%" align="center"><a href="examples/screenshots/case-03.jpg"><img src="examples/screenshots/case-03.jpg" width="240"></a><br><sub>03 高亮强调 + 红色竖线引用</sub></td>
+  </tr>
+  <tr>
+    <td width="33%" align="center"><a href="examples/screenshots/case-04.jpg"><img src="examples/screenshots/case-04.jpg" width="240"></a><br><sub>04 引用 + 配图 + 标题色块</sub></td>
+    <td width="33%" align="center"><a href="examples/screenshots/case-05.jpg"><img src="examples/screenshots/case-05.jpg" width="240"></a><br><sub>05 高亮 + 分隔线 + 章节标题</sub></td>
+    <td width="33%" align="center"><a href="examples/screenshots/case-06.jpg"><img src="examples/screenshots/case-06.jpg" width="240"></a><br><sub>06 红色强调 + 文末总结</sub></td>
+  </tr>
+</table>
+
+> 完整 72 标识渲染图鉴见 [`examples/v0.5.0-all-markers-showcase.html`](examples/v0.5.0-all-markers-showcase.html)
+
+---
+
 ## 一键安装
+
+支持两个目标平台：**WorkBuddy**（`~/.workbuddy/skills/`）和 **Codex**（`~/.codex/skills/`）。默认自动检测，检测到哪个就装哪个。
 
 ### 方式一：Shell 一键安装（推荐）
 
 ```bash
+# 自动检测（默认）
 curl -fsSL https://raw.githubusercontent.com/yxxx6666/wechat-editorial-skill/main/install.sh | bash
+
+# 指定目标
+curl -fsSL https://raw.githubusercontent.com/yxxx6666/wechat-editorial-skill/main/install.sh | bash -s -- --target codex
+curl -fsSL https://raw.githubusercontent.com/yxxx6666/wechat-editorial-skill/main/install.sh | bash -s -- --target workbuddy
+curl -fsSL https://raw.githubusercontent.com/yxxx6666/wechat-editorial-skill/main/install.sh | bash -s -- --target all
 ```
 
-安装到 `~/.workbuddy/skills/wechat-editorial-skill/`，自动安装 Python 依赖。
+| `--target` 值 | 说明 |
+|---------------|------|
+| `auto` | 自动检测已安装的平台（默认） |
+| `workbuddy` | 仅安装到 `~/.workbuddy/skills/` |
+| `codex` | 仅安装到 `~/.codex/skills/` |
+| `all` | 同时安装到两个平台 |
+
+多平台安装时，第一个目标为实体目录，其余为 symlink 指向第一个，保持单一来源。
 
 ### 方式二：手动安装
 
 ```bash
 # 1. 克隆仓库
 git clone https://github.com/yxxx6666/wechat-editorial-skill.git ~/.workbuddy/skills/wechat-editorial-skill
+
+# Codex 用户额外建一个 symlink（可选）
+ln -s ~/.workbuddy/skills/wechat-editorial-skill ~/.codex/skills/wechat-editorial-skill
 
 # 2. 安装 Python 依赖
 pip install pyyaml jsonschema
@@ -52,7 +91,7 @@ python scripts/quick_validate.py . --mode release
 
 ### 方式三：在 WorkBuddy 中使用
 
-在 [WorkBuddy](https://www.codebuddy.cn) 中，通过 Skill 管理器导入本仓库，或直接在对话中 `@skill:wechat-editorial-skill` 调用。
+在 [WorkBuddy](https://www.codebuddy.cn) 中，通过 Skill 管理器导入本仓库，或直接在对话中 `@skill:wechat-editorial-skill` 调用。Codex 中使用 `$wechat-editorial-skill` 调用。
 
 ---
 
