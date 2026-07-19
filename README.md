@@ -1,4 +1,4 @@
-# 公众号纯排版与全量文章视觉标识库
+# 公众号排版-文章视觉
 
 > v0.5.0｜Editorial Marker Library — 把中文文章或 Markdown 排成微信公众号手机端安全 HTML 和草稿箱 JSON，原文逐字保真。
 
