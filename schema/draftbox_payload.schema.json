@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "draftbox_payload.schema.json",
+  "type": "object",
+  "required": [
+    "title",
+    "digest",
+    "content_html",
+    "cover_image_brief",
+    "image_asset_list",
+    "validation_report",
+    "publish_checklist"
+  ],
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "digest": {
+      "type": "string",
+      "maxLength": 120
+    },
+    "content_html": {
+      "type": "string",
+      "minLength": 1,
+      "not": {
+        "pattern": "<\\s*(html|head|body)\\b"
+      }
+    },
+    "cover_image_brief": {
+      "type": "object"
+    },
+    "image_asset_list": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "usage",
+          "ratio",
+          "prompt",
+          "placement",
+          "requires_upload_to_wechat"
+        ],
+        "properties": {
+          "usage": {
+            "type": "string"
+          },
+          "ratio": {
+            "type": "string"
+          },
+          "prompt": {
+            "type": "string"
+          },
+          "placement": {
+            "type": "string"
+          },
+          "requires_upload_to_wechat": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "validation_report": {
+      "type": "object"
+    },
+    "publish_checklist": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

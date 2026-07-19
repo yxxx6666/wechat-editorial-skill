@@ -1,0 +1,319 @@
+# 公众号纯排版与全量文章视觉标识库
+
+> v0.5.0｜Editorial Marker Library — 把中文文章或 Markdown 排成微信公众号手机端安全 HTML 和草稿箱 JSON，原文逐字保真。
+
+[![Version](https://img.shields.io/badge/version-0.5.0-blue)](CHANGELOG.md)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![Markers](https://img.shields.io/badge/markers-72-orange)](templates/editorial-marker-registry.json)
+[![Validation](https://img.shields.io/badge/validation-release%20PASS-brightgreen)](RELEASE_REPORT.md)
+
+一个 **WorkBuddy Skill**，专注于把中文 Markdown 或纯文本文章排成微信公众号可用的内联 HTML，同时生成完整的草稿箱 JSON。**原文是不可变数据**：不改写、不润色、不总结、不提炼、不扩写、不删减、不重组、不生成任何新文案。语义分析只选择稀疏的视觉样式。
+
+---
+
+## 核心能力
+
+| 能力 | 说明 |
+|------|------|
+| **原文逐字保真** | 标题、小标题、引用、图片、图注、表格、参考资料和 CTA 全部按原顺序保留 |
+| **72 个文章视觉标识** | 行内强调(12) / 标题(10) / 色块Callout(16) / 引用(6) / 列表流程(10) / 数据媒体(10) / 元信息(8) |
+| **分层启用** | 13 自动安全 + 33 原文触发 + 22 手动指定 + 4 微信降级 |
+| **4 套主题** | `editorial`（知识科普）/ `business`（商业工具）/ `minimal`（观点故事）/ `course`（课程说明） |
+| **智能配图** | 封面 2.35:1 + 正文 3:4 规划，自动匹配视觉风格 |
+| **三级验证** | quick / regression / release，发布前强制 release 通过 |
+| **草稿箱 JSON** | 生成可直接导入微信公众号草稿箱的结构化 JSON |
+| **微信安全** | 禁止 Script / Flex / Grid / Animation / Sticky，全部内联样式 |
+
+---
+
+## 一键安装
+
+### 方式一：Shell 一键安装（推荐）
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/yxxx6666/wechat-editorial-skill/main/install.sh | bash
+```
+
+安装到 `~/.workbuddy/skills/wechat-editorial-skill/`，自动安装 Python 依赖。
+
+### 方式二：手动安装
+
+```bash
+# 1. 克隆仓库
+git clone https://github.com/yxxx6666/wechat-editorial-skill.git ~/.workbuddy/skills/wechat-editorial-skill
+
+# 2. 安装 Python 依赖
+pip install pyyaml jsonschema
+
+# 3. 验证安装
+cd ~/.workbuddy/skills/wechat-editorial-skill
+python scripts/quick_validate.py . --mode release
+```
+
+### 方式三：在 WorkBuddy 中使用
+
+在 [WorkBuddy](https://www.codebuddy.cn) 中，通过 Skill 管理器导入本仓库，或直接在对话中 `@skill:wechat-editorial-skill` 调用。
+
+---
+
+## 快速开始
+
+### 基本用法
+
+```bash
+python scripts/build_article.py article.md --output-dir out
+```
+
+生成：
+
+```
+out/article.wechat.html   # 微信公众号可用 HTML
+out/article.wechat.json   # 草稿箱 JSON + 验证报告
+```
+
+### 指定主题
+
+```bash
+python scripts/build_article.py article.md --output-dir out --theme business
+```
+
+主题说明：
+
+| 主题 | 适用场景 | 视觉风格 |
+|------|---------|---------|
+| `editorial` | 知识科普、深度解读 | 沉稳蓝灰 + 学术感 |
+| `business` | 商业发布、工具更新 | 干净利落 + 数据导向 |
+| `minimal` | 观点、故事、读书笔记 | 极简留白 + 阅读优先 |
+| `course` | 课程说明、教程指引 | 结构清晰 + 步骤感强 |
+| `auto` | 自动选择（默认） | 根据文章类型匹配 |
+
+### 生成全标识图鉴
+
+```bash
+python scripts/render_marker_showcase.py -o showcase.html
+```
+
+生成包含全部 72 个标识的渲染样例页，可用于预览和参考。
+
+---
+
+## 72 个文章视觉标识
+
+### 启用级别
+
+| 级别 | 数量 | 说明 |
+|------|------|------|
+| `auto_safe` | 13 | 可稀疏自动使用，无需原文特殊结构 |
+| `source_triggered` | 33 | 原文已有明确结构时自动转换 |
+| `manual` | 22 | 需用户手动指定 |
+| `wechat_fallback` | 4 | 复杂互动组件降级为静态微信安全样式 |
+
+### 分类一览
+
+| 分类 | 数量 | 典型标识 |
+|------|------|---------|
+| **行内强调** | 12 | 重点加粗、实线下划线、点状下划线、删除线、段内高亮… |
+| **标题** | 10 | 大序号标题(01/02/03)、左竖线标题、章节短横线… |
+| **色块 Callout** | 16 | 原文重点色块、矩形原文框、定义框、事实框、提示框… |
+| **引用** | 6 | 左侧竖线引用、无标题竖线、金句块… |
+| **列表流程** | 10 | CSS 圆点列表、编号列表、步骤流程… |
+| **数据媒体** | 10 | 数据强调、表格降级卡、图片图注… |
+| **元信息** | 8 | 作者、日期、阅读时间、来源… |
+
+> 完整标识注册表见 [`templates/editorial-marker-registry.json`](templates/editorial-marker-registry.json)
+> 全标识渲染图鉴见 [`examples/v0.5.0-all-markers-showcase.html`](examples/v0.5.0-all-markers-showcase.html)
+
+---
+
+## 验证
+
+### 三级验证体系
+
+```bash
+# 快速检查（开发时用）
+python scripts/quick_validate.py . --mode quick
+
+# 回归验证（确保不破坏已有功能）
+python scripts/quick_validate.py . --mode regression
+
+# 发布验证（正式发布前必须通过）
+python scripts/quick_validate.py . --mode release
+```
+
+### 发布门禁
+
+| 门禁 | 要求 |
+|------|------|
+| `content_fidelity` | `status = pass` |
+| `source_coverage` | `complete = true` |
+| `source_order` | `preserved = true` |
+| `P0` | `= 0` |
+| `P1` | `= 0` |
+| `visual_score` | `>= 88` |
+| `generated_copy` | `= 0` |
+| `generated_labels` | `= 0` |
+| `rewritten_paragraphs` | `= 0` |
+| 72 标识渲染回归 | `72/72 PASS` |
+
+---
+
+## 语义标记规则
+
+### 允许的操作（只改样式，不改文字）
+
+- **下划线**：轻强调核心概念、判断或风险
+- **删除线**：只用于被修正的旧认知
+- **段内高亮**：关键词、行动、提醒和数据
+- **原文重点色块**：原文完整句子原样放入浅色背景与左侧竖线
+- **左侧竖线**：完整引用或可截图金句
+- **数据强调**：百分比、年份、时长、金额、倍数等
+
+### 禁止的操作
+
+- 生成"核心判断、行动建议、最后总结"等标签
+- 自动增加 01/02/03 编号（只保留原文已有编号）
+- 生成"编辑注"、批注或补充文案
+- 自动结论卡片、渐变重点条
+- 双栏重组原文（默认关闭）
+
+### 密度控制
+
+- 每段最多使用 1 种行内标记
+- 整篇可见强调色最多 3 种（灰色和正文色不计入）
+- 原文重点色块：短文最多 1 个，中长文最多 2 个
+- 不要"能用都用"，转折后的落点优先于局部关键词
+
+---
+
+## 目录结构
+
+```
+wechat-editorial-skill/
+├── SKILL.md                      # Skill 定义与工作流
+├── README.md                     # 本文件
+├── CHANGELOG.md                  # 版本历史
+├── RELEASE_REPORT.md             # 发布验证报告
+├── VERSION.md                    # 版本信息
+├── pipeline.yaml                 # 流水线配置
+├── install.sh                    # 一键安装脚本
+│
+├── core/                         # 核心引擎（29 个模块）
+│   ├── content_fidelity_protocol.md    # 内容保真协议
+│   ├── semantic_marker_system.md       # 语义标记系统
+│   ├── editorial_marker_library.md     # 标识库说明
+│   ├── wechat_component_contract.md    # 微信组件契约
+│   ├── wechat_html_renderer.md         # HTML 渲染器
+│   ├── wechat_html_rules.md            # HTML 安全规则
+│   ├── visual_director.md              # 视觉导演
+│   ├── typography_director.md          # 排版导演
+│   ├── validator.md                    # 验证器
+│   └── ...
+│
+├── scripts/                      # 可执行脚本
+│   ├── build_article.py                # 构建入口（HTML+JSON）
+│   ├── render_marker_showcase.py       # 全标识图鉴生成器
+│   ├── quick_validate.py               # 三级验证
+│   ├── md_to_wechat.py                 # 旧版构建入口
+│   ├── sanitize_wechat_html.py         # HTML 安全清洗
+│   ├── validate_content_html.py        # 内容 HTML 验证
+│   ├── visual_rhythm_validator.py      # 视觉节奏验证
+│   └── editorial_marker_library.py     # 标识库脚本
+│
+├── templates/                    # 模板与配置
+│   ├── editorial-marker-registry.json  # 72 标识注册表
+│   ├── theme-profiles.json             # 4 套主题
+│   └── wechat-article-template.md      # 文章模板
+│
+├── schema/                       # JSON Schema
+│   ├── article_plan.schema.json        # 文章计划
+│   ├── component_tree.schema.json      # 组件树
+│   └── draftbox_payload.schema.json    # 草稿箱载荷
+│
+├── references/                   # 参考文档（13 篇）
+│   ├── component-library.md            # 组件库
+│   ├── editorial-marker-catalog.md     # 标识目录
+│   ├── forbidden-html.md               # 禁止 HTML
+│   ├── wechat-html-rules.md            # 微信 HTML 规则
+│   ├── wechat-magazine-style-guide.md  # 杂志风格指南
+│   └── ...
+│
+├── examples/                     # 示例文章
+│   ├── v0.5.0-all-markers-showcase.html  # 全标识图鉴
+│   ├── demo_article.md
+│   ├── before_after/                     # 改造前后对比
+│   ├── visual_polish/                    # 视觉打磨样例
+│   └── marker_library/                   # 标识库样例
+│
+└── agents/                       # Agent 配置
+    └── openai.yaml
+```
+
+---
+
+## 版本历史
+
+### v0.5.0｜Editorial Marker Library
+
+- 新增 72 个可执行文章标识，覆盖 7 大分类
+- 新增 `editorial-marker-registry.json` 标识注册表
+- 新增全标识展示页和 72/72 渲染回归
+- 互动组件统一静态降级
+
+### v0.4.4｜Schema Validation Hotfix
+
+- 修复 `component_tree.schema.json` 遗漏 `outlined_text_box` 的 bug
+- 无 `jsonschema` 环境的降级校验升级为递归校验
+
+### v0.4.3｜Numbered Headings & Text Boxes
+
+- 一级大标题改为 `01 / 02 / 03` 大序号
+- 新增矩形原文框
+
+### v0.4.2｜Source-Text Visual Markers
+
+- 恢复原文重点色块
+- 新增无文字视觉标识
+
+### v0.4.1｜Pure Layout Fidelity
+
+- 锁定为纯排版工具
+- 删除自动注入的标签
+- 新增 `generated_copy` 发布门禁
+
+### v0.4.0｜Semantic Editorial System
+
+- 新增 `build_article.py` 构建入口
+- 内容保真升级为六重门禁
+- 四套主题接入真实渲染
+
+> 完整版本历史见 [CHANGELOG.md](CHANGELOG.md)
+
+---
+
+## 技术依赖
+
+- **Python 3.10+**
+- `pyyaml` — YAML 解析
+- `jsonschema` — JSON Schema 校验
+
+## 运行环境
+
+- [WorkBuddy](https://www.codebuddy.cn)（推荐，内置 Skill 调用）
+- 任意支持 Python 3.10+ 的环境（命令行独立运行）
+
+## 设计原则
+
+1. **原文不可变** — 不改写、不生成、不重组任何文字
+2. **稀疏标记** — 不"能用都用"，转折后的落点优先
+3. **微信安全** — 禁止 Script / Flex / Grid / Animation / Sticky
+4. **可验证** — 三级验证 + 发布门禁，禁止假 PASS
+5. **纯排版** — 语义分析只选视觉样式，不增加标签和文案
+
+## 许可证
+
+MIT License — 见 [LICENSE](LICENSE)
+
+## 反馈
+
+- [提交 Issue](https://github.com/yxxx6666/wechat-editorial-skill/issues)
+- [查看全标识图鉴](examples/v0.5.0-all-markers-showcase.html)

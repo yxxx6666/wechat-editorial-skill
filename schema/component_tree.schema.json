@@ -1,0 +1,150 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "profile",
+    "components"
+  ],
+  "properties": {
+    "profile": {
+      "type": "string",
+      "enum": [
+        "strict_draftbox",
+        "rich_article"
+      ]
+    },
+    "components": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/component"
+      }
+    }
+  },
+  "$defs": {
+    "component": {
+      "type": "object",
+      "required": [
+        "type",
+        "role",
+        "content",
+        "style_token"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "article_container",
+            "title_block",
+            "intro_conclusion_card",
+            "problem_intro",
+            "article_nav",
+            "section_title",
+            "body_paragraph",
+            "emphasis_sentence",
+            "core_quote_card",
+            "auxiliary_quote",
+            "insight_card",
+            "step_card",
+            "checklist",
+            "simple_compare_table",
+            "image_block",
+            "image_caption",
+            "divider",
+            "summary_card",
+            "references_block",
+            "soft_cta",
+            "semantic_color_block",
+            "outlined_text_box",
+            "left_quote",
+            "capsule_label",
+            "icon_marker",
+            "double_compare",
+            "gradient_emphasis_bar",
+            "editorial_note",
+            "numbered_points",
+            "strong_emphasis",
+            "solid_underline",
+            "dotted_underline",
+            "double_underline",
+            "strikethrough",
+            "inline_highlight",
+            "text_color",
+            "inline_pill",
+            "inline_outline",
+            "data_badge",
+            "inline_code",
+            "footnote_mark",
+            "large_number_heading",
+            "chinese_number_heading",
+            "roman_number_heading",
+            "letter_heading",
+            "part_heading",
+            "centered_heading",
+            "boxed_heading",
+            "bottom_line_heading",
+            "eyebrow",
+            "drop_cap",
+            "filled_text_box",
+            "top_bar_box",
+            "bottom_bar_box",
+            "left_bar_box",
+            "dashed_border_box",
+            "minimal_gray_box",
+            "definition_box",
+            "fact_box",
+            "example_box",
+            "callout_note",
+            "callout_tip",
+            "callout_warning",
+            "callout_important",
+            "callout_caution",
+            "block_quote",
+            "pull_quote",
+            "epigraph",
+            "quote_with_source",
+            "centered_quote",
+            "solid_circle_list",
+            "hollow_circle_list",
+            "square_list",
+            "triangle_list",
+            "diamond_list",
+            "decimal_list",
+            "zero_padded_list",
+            "step_cards",
+            "vertical_timeline",
+            "data_table",
+            "big_number",
+            "kpi_card",
+            "stat_strip",
+            "percentage_bar",
+            "pros_cons",
+            "formula_block",
+            "code_block",
+            "author_byline",
+            "publish_date",
+            "reading_time",
+            "category_marker",
+            "source_note",
+            "citation_block",
+            "article_end_mark"
+          ]
+        },
+        "role": {
+          "type": "string"
+        },
+        "content": {},
+        "style_token": {
+          "type": "string"
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/component"
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

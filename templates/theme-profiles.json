@@ -1,0 +1,46 @@
+{
+  "editorial": {
+    "name": "清爽知识杂志",
+    "accent": "#1746A2",
+    "text": "#2A2E34",
+    "grey": "#8A9099",
+    "pale": "#F7F8FA",
+    "blue_bg": "#EAF0FA",
+    "warm": "#FFFDF8",
+    "line": "#ECEEF1",
+    "gradient": ["#1746A2", "#6B46C1"]
+  },
+  "business": {
+    "name": "理性商业",
+    "accent": "#123B5D",
+    "text": "#26313A",
+    "grey": "#7B8792",
+    "pale": "#F4F7F9",
+    "blue_bg": "#E8F0F5",
+    "warm": "#FCFBF7",
+    "line": "#E5EAEE",
+    "gradient": ["#123B5D", "#356B8C"]
+  },
+  "minimal": {
+    "name": "克制极简",
+    "accent": "#4B5563",
+    "text": "#2B2F33",
+    "grey": "#8B9097",
+    "pale": "#F7F7F7",
+    "blue_bg": "#EEF0F2",
+    "warm": "#FCFCFA",
+    "line": "#E8E8E8",
+    "gradient": ["#4B5563", "#7C8796"]
+  },
+  "course": {
+    "name": "温暖课程",
+    "accent": "#A35A00",
+    "text": "#332C26",
+    "grey": "#8C8176",
+    "pale": "#FAF7F2",
+    "blue_bg": "#F7ECDD",
+    "warm": "#FFF9F0",
+    "line": "#EEE4D7",
+    "gradient": ["#A35A00", "#D89A2B"]
+  }
+}

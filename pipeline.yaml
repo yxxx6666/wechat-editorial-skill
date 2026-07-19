@@ -1,0 +1,38 @@
+version: 0.5.0
+name: Editorial Marker Library
+status: 大序号标题与矩形原文框增强版
+skill_id: xingchen/wechat-editorial-skill
+entrypoint: scripts/build_article.py
+compiler: scripts/md_to_wechat.py
+default_profile: strict_draftbox
+default_theme: auto
+outputs:
+  - '*.wechat.html'
+  - '*.wechat.json'
+validation:
+  quick: python scripts/quick_validate.py . --mode quick
+  regression: python scripts/quick_validate.py . --mode regression
+  release: python scripts/quick_validate.py . --mode release
+  visual_score_min: 88
+  require_content_fidelity_passed: true
+  require_source_coverage_complete: true
+  require_source_order_preserved: true
+  require_paired_punctuation: true
+  require_schema_passed: true
+  require_no_p0: true
+  require_no_p1: true
+  max_inline_marker_types_per_paragraph: 1
+  max_visible_accent_colors: 3
+  max_gradient_emphasis_bars: 0
+  forbid_detached_section_numbers: true
+  forbid_third_party_watermark_removal: true
+  require_generated_copy_zero: true
+  require_source_text_immutable: true
+  max_generated_labels: 0
+  max_color_blocks_per_500_chars: 1
+  require_color_block_text_from_source: true
+  require_color_block_label_empty: true
+  require_large_numbered_headings: true
+  forbid_heading_left_border: true
+  require_text_box_text_from_source: true
+  require_text_box_label_empty: true

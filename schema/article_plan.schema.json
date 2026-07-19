@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "article_plan.schema.json",
+  "type": "object",
+  "required": [
+    "title",
+    "digest",
+    "audience",
+    "core_message",
+    "article_type",
+    "sections",
+    "quotes",
+    "actions",
+    "references",
+    "image_assets"
+  ],
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "digest": {
+      "type": "string",
+      "maxLength": 120
+    },
+    "audience": {
+      "type": "string"
+    },
+    "core_message": {
+      "type": "string"
+    },
+    "article_type": {
+      "type": "string"
+    },
+    "sections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "heading",
+          "goal",
+          "raw_points",
+          "paragraph_groups",
+          "key_sentence_candidates"
+        ],
+        "properties": {
+          "heading": {
+            "type": "string"
+          },
+          "goal": {
+            "type": "string"
+          },
+          "raw_points": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "paragraph_groups": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "key_sentence_candidates": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "quotes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "actions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "references": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "image_assets": {
+      "type": "array"
+    }
+  }
+}
