@@ -43,7 +43,7 @@
   </tr>
 </table>
 
-> 完整 72 标识渲染图鉴见 [`examples/v0.5.0-all-markers-showcase.html`](examples/v0.5.0-all-markers-showcase.html)
+> 完整 72 标识渲染图鉴：[🌐 在线预览](https://yxxx6666.github.io/wechat-editorial-skill/examples/v0.5.0-all-markers-showcase.html) ｜ [📄 源文件](examples/v0.5.0-all-markers-showcase.html)
 
 ---
 
@@ -160,7 +160,7 @@ python scripts/render_marker_showcase.py -o showcase.html
 | **元信息** | 8 | 作者、日期、阅读时间、来源… |
 
 > 完整标识注册表见 [`templates/editorial-marker-registry.json`](templates/editorial-marker-registry.json)
-> 全标识渲染图鉴见 [`examples/v0.5.0-all-markers-showcase.html`](examples/v0.5.0-all-markers-showcase.html)
+> 全标识渲染图鉴：[🌐 在线预览](https://yxxx6666.github.io/wechat-editorial-skill/examples/v0.5.0-all-markers-showcase.html)
 
 ---
 
@@ -355,4 +355,4 @@ MIT License — 见 [LICENSE](LICENSE)
 ## 反馈
 
 - [提交 Issue](https://github.com/yxxx6666/wechat-editorial-skill/issues)
-- [查看全标识图鉴](examples/v0.5.0-all-markers-showcase.html)
+- [🌐 查看全标识图鉴（在线预览）](https://yxxx6666.github.io/wechat-editorial-skill/examples/v0.5.0-all-markers-showcase.html)
