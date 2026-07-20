@@ -1,8 +1,8 @@
-# Content-Aware Article Visuals
+# Section-Orchestrated Editorial Marker Library
 
 ## 目标
 
-v0.5.2 继续将 72 个文章视觉标识统一收录到注册表、Schema、渲染器、展示页和发布测试中。完整组件库不等于一篇文章全部显示。
+v0.6.2 将标识库从 84 个扩展到 94 个，补齐 6 个章节分隔符、段首微型符号、重点句角标、逻辑递进轨道和数据组合轨道；同时把既有列表、数据、引用与文章结束标识接入真实自动编排。完整组件库必须通过 `section_visual_coverage` 证明已经进入文章。
 
 ## 四级启用
 
@@ -24,5 +24,5 @@ v0.5.2 继续将 72 个文章视觉标识统一收录到注册表、Schema、渲
 - 注册表：`templates/editorial-marker-registry.json`
 - 渲染器：`scripts/editorial_marker_library.py`
 - 展示生成器：`scripts/render_marker_showcase.py`
-- 全量展示页：`examples/v0.5.2-all-markers-showcase.html`
+- 全量展示页：`examples/v0.6.2-all-markers-showcase.html`
 - 目录：`references/editorial-marker-catalog.md`

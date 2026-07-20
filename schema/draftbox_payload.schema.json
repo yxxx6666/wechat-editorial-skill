@@ -9,7 +9,8 @@
     "cover_image_brief",
     "image_asset_list",
     "validation_report",
-    "publish_checklist"
+    "publish_checklist",
+    "section_visual_coverage"
   ],
   "properties": {
     "title": {
@@ -66,6 +67,109 @@
       "type": "array",
       "items": {
         "type": "string"
+      }
+    },
+    "section_visual_coverage": {
+      "type": "object",
+      "required": [
+        "status",
+        "sections",
+        "dry_sections",
+        "single_marker_only_sections",
+        "repeated_adjacent_signatures",
+        "no_separator_long_sections",
+        "repeated_separator_types",
+        "missing_micro_symbol_sections",
+        "repeated_list_symbols",
+        "unused_runtime_markers",
+        "decorative_symbol_overload_sections",
+        "data_marker_underuse_sections",
+        "quote_style_repetition",
+        "runtime_marker_types"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "pass",
+            "fail"
+          ]
+        },
+        "sections": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "dry_sections": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "single_marker_only_sections": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "repeated_adjacent_signatures": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "no_separator_long_sections": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "repeated_separator_types": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "missing_micro_symbol_sections": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "repeated_list_symbols": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "unused_runtime_markers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "decorative_symbol_overload_sections": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "data_marker_underuse_sections": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "quote_style_repetition": {
+          "type": "boolean"
+        },
+        "runtime_marker_types": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
       }
     }
   }

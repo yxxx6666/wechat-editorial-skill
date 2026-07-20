@@ -1,4 +1,4 @@
-version: 0.5.2
+version: 0.6.2
 name: Content-Aware Article Visuals
 status: 公众号排版-文章视觉
 skill_id: xingchen/wechat-editorial-skill
@@ -21,6 +21,14 @@ validation:
   require_exact_heading_order: true
   forbid_generated_headings: true
   require_runtime_manifest: true
+  require_section_visual_coverage_passed: true
+  forbid_dry_sections: true
+  forbid_repeated_adjacent_visual_signatures: true
+  max_consecutive_card_blocks: 2
+  require_separator_orchestration: true
+  require_micro_symbol_coverage: true
+  forbid_repeated_separator_types: true
+  require_runtime_marker_coverage: true
   require_paired_punctuation: true
   require_schema_passed: true
   require_no_p0: true

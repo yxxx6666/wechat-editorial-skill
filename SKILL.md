@@ -1,6 +1,6 @@
 ---
 name: wechat-editorial-skill
-description: 公众号排版-文章视觉（v0.5.2）｜把中文文章或 Markdown 排成微信公众号手机端安全 HTML 和草稿箱 JSON，原文逐字保真，内容自动视觉标识 + 72 个标识库 + 4 套主题 + 智能配图 + 三级验证 + 标题保真守卫。当用户需要公众号排版、微信公众号文章美化、Markdown 转公众号 HTML、文章视觉层级、语义高亮、重点卡片、双栏对比、公众号封面与正文配图规划时使用。
+description: 公众号排版-文章视觉（v0.6.2）｜把中文文章或 Markdown 排成微信公众号手机端安全 HTML 和草稿箱 JSON，原文逐字保真，94 个文章视觉标识 + 章节视觉编排器 + 4 套主题 + 智能配图 + 三级验证。当用户需要公众号排版、微信公众号文章美化、Markdown 转公众号 HTML、文章视觉层级、语义高亮、重点卡片、双栏对比、公众号封面与正文配图规划，或要求在保持原文逐字保真的前提下验证并打包微信文章排版时使用。
 ---
 
 # 公众号排版-文章视觉
@@ -47,11 +47,11 @@ python scripts/build_article.py <input.md> --output-dir <output-dir> --profile s
 
 每段最多使用 1 种行内标记；整篇颜色与标识种类由内容决定。允许丰富，禁止机械；不得为了减少重复而漏标应当突出的内容。详见 [core/semantic_marker_system.md](core/semantic_marker_system.md)。
 
-## v0.5.2 公众号排版-文章视觉
+## v0.6.2 公众号排版-文章视觉
 
-本版优先执行标题保真运行时防护：原文编号与标题逐项锁定；没有原文标题时禁止从正文生成标题；HTML `<br>` 必须先恢复为换行；任何标题数量、文字或顺序变化均按 P0 阻断。执行结果必须包含 `runtime_manifest`。
+本版完成全符号编排。在章节视觉编排器基础上补齐分隔符、段首微型符号、重点句角标、逻辑递进轨道和数据组合轨道，并把既有列表、数据、引用和文章结束标识接入自动链。执行结果必须同时包含 `runtime_manifest` 与完整 `section_visual_coverage`。
 
-使用组件前读取 `templates/editorial-marker-registry.json` 与 `core/editorial_marker_library.md`。72 个标识全部保留。`content_auto` 组件由文章内容自动触发；`manual` 只保留无法从原文结构可靠判断的纯样式选择；复杂能力统一输出微信静态降级。
+使用组件前读取 `templates/editorial-marker-registry.json`、`core/editorial_marker_library.md` 与 `core/section_visual_orchestrator.md`。94 个标识全部保留，其中新增 10 个分隔符与微型结构标识进入内容自动编排层。`content_auto` 组件由文章内容自动触发；`manual` 只保留无法从原文结构可靠判断的纯样式选择；复杂能力统一输出微信静态降级。
 
 系统必须先识别事实、数据、行动、风险、注意、洞察、旧认知、定义、案例、引用和步骤，再选择视觉标识。标识数量由文章长度、信息密度和语义类型决定，不得设置每篇 6–10 种等固定上限，不得以“减少重复”为理由让整篇文章失去视觉冲击力。
 
@@ -65,6 +65,12 @@ python scripts/build_article.py <input.md> --output-dir <output-dir> --profile s
 - 禁止从正文重点句、绿色短语或关键词提炼章节标题。
 - 没有原文小标题时，正文保持无小标题结构。
 - `runtime_manifest.runtime_version` 必须等于当前版本，且两项门禁状态必须为 `executed`。
+- `section_visual_coverage.status` 必须为 `pass`。
+- 长章节不得只有标题和一个色块；相邻章节不得使用完全相同的视觉签名。
+- 长章节之间必须有内容驱动分隔符；相邻分隔符不得重复。
+- 列表符号、数据标识与引用样式必须根据原文结构变化，禁止全篇只使用一种。
+- 无分隔符长章节、装饰过载、数据标识不足和引用样式机械重复必须为 0。
+- 块级组件不能取代正文，连续卡片不得超过 2 个。
 - 导语、正文、引用、图注、参考资料和 CTA 无遗漏。
 - 中文引号、书名号、括号和方括号成对。
 - 双栏对比可以重组视觉结构，但左右内容必须来自原文。

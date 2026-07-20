@@ -1,5 +1,5 @@
 {
-  "version": "0.5.2",
+  "version": "0.6.2",
   "name": "Content-Aware Article Visuals",
   "policy": {
     "pure_layout": true,
@@ -765,7 +765,7 @@
       "id": "pull_quote",
       "name_zh": "正文原句拉引",
       "category": "quote",
-      "activation": "manual",
+      "activation": "content_auto",
       "wechat_support": "native_static",
       "source_policy": "verbatim_only",
       "generated_text_policy": "forbidden",
@@ -887,7 +887,7 @@
       "id": "hollow_circle_list",
       "name_zh": "空心圆列表",
       "category": "list_process",
-      "activation": "manual",
+      "activation": "content_auto",
       "wechat_support": "native_static",
       "source_policy": "verbatim_only",
       "generated_text_policy": "forbidden",
@@ -950,7 +950,7 @@
       "id": "diamond_list",
       "name_zh": "菱形列表",
       "category": "list_process",
-      "activation": "manual",
+      "activation": "content_auto",
       "wechat_support": "native_static",
       "source_policy": "verbatim_only",
       "generated_text_policy": "forbidden",
@@ -992,7 +992,7 @@
       "id": "zero_padded_list",
       "name_zh": "两位序号列表",
       "category": "list_process",
-      "activation": "manual",
+      "activation": "content_auto",
       "wechat_support": "native_static",
       "source_policy": "verbatim_only",
       "generated_text_policy": "forbidden",
@@ -1367,7 +1367,7 @@
       "id": "article_end_mark",
       "name_zh": "文章结束标识",
       "category": "metadata_reference",
-      "activation": "manual",
+      "activation": "content_auto",
       "wechat_support": "native_static",
       "source_policy": "verbatim_only",
       "generated_text_policy": "forbidden",
@@ -1376,6 +1376,393 @@
       "sample": "原文结束语",
       "source_fields": [
         "text"
+      ]
+    },
+    {
+      "id": "chapter_dot_rail",
+      "name_zh": "章节圆点轨道",
+      "category": "heading",
+      "activation": "content_auto",
+      "wechat_support": "native_static",
+      "source_policy": "verbatim_only",
+      "generated_text_policy": "forbidden",
+      "density_group": "heading",
+      "renderer": "chapter_dot_rail",
+      "sample": {
+        "text": "原文章节标题",
+        "index": 1
+      },
+      "source_fields": [
+        "text"
+      ]
+    },
+    {
+      "id": "chapter_corner_frame",
+      "name_zh": "章节角线框",
+      "category": "heading",
+      "activation": "content_auto",
+      "wechat_support": "native_static",
+      "source_policy": "verbatim_only",
+      "generated_text_policy": "forbidden",
+      "density_group": "heading",
+      "renderer": "chapter_corner_frame",
+      "sample": {
+        "text": "原文章节标题",
+        "index": 2
+      },
+      "source_fields": [
+        "text"
+      ]
+    },
+    {
+      "id": "chapter_double_rule",
+      "name_zh": "章节长短双线",
+      "category": "heading",
+      "activation": "content_auto",
+      "wechat_support": "native_static",
+      "source_policy": "verbatim_only",
+      "generated_text_policy": "forbidden",
+      "density_group": "heading",
+      "renderer": "chapter_double_rule",
+      "sample": {
+        "text": "原文章节标题",
+        "index": 3
+      },
+      "source_fields": [
+        "text"
+      ]
+    },
+    {
+      "id": "chapter_diamond_mark",
+      "name_zh": "章节菱形标识",
+      "category": "heading",
+      "activation": "content_auto",
+      "wechat_support": "native_static",
+      "source_policy": "verbatim_only",
+      "generated_text_policy": "forbidden",
+      "density_group": "heading",
+      "renderer": "chapter_diamond_mark",
+      "sample": {
+        "text": "原文章节标题",
+        "index": 4
+      },
+      "source_fields": [
+        "text"
+      ]
+    },
+    {
+      "id": "chapter_end_signature",
+      "name_zh": "章节结束签名",
+      "category": "heading",
+      "activation": "content_auto",
+      "wechat_support": "native_static",
+      "source_policy": "css_only",
+      "generated_text_policy": "forbidden",
+      "density_group": "divider",
+      "renderer": "chapter_end_signature",
+      "sample": {
+        "tone": "data"
+      },
+      "source_fields": []
+    },
+    {
+      "id": "soft_marker_underline",
+      "name_zh": "柔和马克笔下划线",
+      "category": "inline",
+      "activation": "content_auto",
+      "wechat_support": "native_static",
+      "source_policy": "verbatim_only",
+      "generated_text_policy": "forbidden",
+      "density_group": "inline",
+      "renderer": "soft_marker_underline",
+      "sample": {
+        "text": "原文关键词"
+      },
+      "source_fields": [
+        "text"
+      ]
+    },
+    {
+      "id": "keyword_corner_outline",
+      "name_zh": "关键词角线描边",
+      "category": "inline",
+      "activation": "content_auto",
+      "wechat_support": "native_static",
+      "source_policy": "verbatim_only",
+      "generated_text_policy": "forbidden",
+      "density_group": "inline",
+      "renderer": "keyword_corner_outline",
+      "sample": {
+        "text": "原文关键词"
+      },
+      "source_fields": [
+        "text"
+      ]
+    },
+    {
+      "id": "dual_tone_phrase",
+      "name_zh": "双色短语强调",
+      "category": "inline",
+      "activation": "content_auto",
+      "wechat_support": "native_static",
+      "source_policy": "verbatim_only",
+      "generated_text_policy": "forbidden",
+      "density_group": "inline",
+      "renderer": "dual_tone_phrase",
+      "sample": {
+        "text": "原文关键词"
+      },
+      "source_fields": [
+        "text"
+      ]
+    },
+    {
+      "id": "question_stack",
+      "name_zh": "原文问题组",
+      "category": "list_process",
+      "activation": "content_auto",
+      "wechat_support": "native_static",
+      "source_policy": "verbatim_only",
+      "generated_text_policy": "forbidden",
+      "density_group": "list_process",
+      "renderer": "question_stack",
+      "sample": {
+        "items": [
+          "第一个原文问题？",
+          "第二个原文问题？",
+          "第三个原文问题？"
+        ]
+      },
+      "source_fields": [
+        "items[]"
+      ]
+    },
+    {
+      "id": "parallel_sentence_rail",
+      "name_zh": "并列句节点轨道",
+      "category": "list_process",
+      "activation": "content_auto",
+      "wechat_support": "native_static",
+      "source_policy": "verbatim_only",
+      "generated_text_policy": "forbidden",
+      "density_group": "list_process",
+      "renderer": "parallel_sentence_rail",
+      "sample": {
+        "items": [
+          "第一句原文内容。",
+          "第二句原文内容。",
+          "第三句原文内容。"
+        ]
+      },
+      "source_fields": [
+        "items[]"
+      ]
+    },
+    {
+      "id": "contrast_pair_plain",
+      "name_zh": "无标签原文对照",
+      "category": "box_callout",
+      "activation": "content_auto",
+      "wechat_support": "native_static",
+      "source_policy": "verbatim_only",
+      "generated_text_policy": "forbidden",
+      "density_group": "box_callout",
+      "renderer": "contrast_pair_plain",
+      "sample": {
+        "items": [
+          "第一句原文。",
+          "与之形成对照的第二句原文。"
+        ]
+      },
+      "source_fields": [
+        "items[]"
+      ]
+    },
+    {
+      "id": "closing_focus_frame",
+      "name_zh": "结尾聚焦框",
+      "category": "box_callout",
+      "activation": "content_auto",
+      "wechat_support": "native_static",
+      "source_policy": "verbatim_only",
+      "generated_text_policy": "forbidden",
+      "density_group": "box_callout",
+      "renderer": "closing_focus_frame",
+      "sample": {
+        "text": "文章最后一句原文。",
+        "tone": "insight"
+      },
+      "source_fields": [
+        "text"
+      ]
+    },
+    {
+      "activation": "content_auto",
+      "wechat_support": "native_static",
+      "source_policy": "css_only",
+      "generated_text_policy": "forbidden",
+      "density_group": "divider",
+      "category": "heading",
+      "source_fields": [],
+      "id": "short_double_divider",
+      "name_zh": "长短双线分隔",
+      "renderer": "short_double_divider",
+      "sample": {
+        "tone": "data"
+      }
+    },
+    {
+      "activation": "content_auto",
+      "wechat_support": "native_static",
+      "source_policy": "css_only",
+      "generated_text_policy": "forbidden",
+      "density_group": "divider",
+      "category": "heading",
+      "source_fields": [],
+      "id": "diamond_line_divider",
+      "name_zh": "菱形细线分隔",
+      "renderer": "diamond_line_divider",
+      "sample": {
+        "tone": "data"
+      }
+    },
+    {
+      "activation": "content_auto",
+      "wechat_support": "native_static",
+      "source_policy": "css_only",
+      "generated_text_policy": "forbidden",
+      "density_group": "divider",
+      "category": "heading",
+      "source_fields": [],
+      "id": "dot_chain_divider",
+      "name_zh": "圆点链分隔",
+      "renderer": "dot_chain_divider",
+      "sample": {
+        "tone": "data"
+      }
+    },
+    {
+      "activation": "content_auto",
+      "wechat_support": "native_static",
+      "source_policy": "css_only",
+      "generated_text_policy": "forbidden",
+      "density_group": "divider",
+      "category": "heading",
+      "source_fields": [],
+      "id": "dual_tone_divider",
+      "name_zh": "蓝紫双色分隔",
+      "renderer": "dual_tone_divider",
+      "sample": {
+        "tone": "data"
+      }
+    },
+    {
+      "activation": "content_auto",
+      "wechat_support": "native_static",
+      "source_policy": "css_only",
+      "generated_text_policy": "forbidden",
+      "density_group": "divider",
+      "category": "heading",
+      "source_fields": [],
+      "id": "center_node_divider",
+      "name_zh": "中心节点分隔",
+      "renderer": "center_node_divider",
+      "sample": {
+        "tone": "data"
+      }
+    },
+    {
+      "activation": "content_auto",
+      "wechat_support": "native_static",
+      "source_policy": "css_only",
+      "generated_text_policy": "forbidden",
+      "density_group": "divider",
+      "category": "heading",
+      "source_fields": [],
+      "id": "chapter_transition_divider",
+      "name_zh": "章节过渡轨道",
+      "renderer": "chapter_transition_divider",
+      "sample": {
+        "tone": "data"
+      }
+    },
+    {
+      "id": "paragraph_lead_symbol",
+      "name_zh": "段首微型标识",
+      "category": "box_callout",
+      "activation": "content_auto",
+      "wechat_support": "native_static",
+      "source_policy": "verbatim_only",
+      "generated_text_policy": "forbidden",
+      "density_group": "inline",
+      "renderer": "paragraph_lead_symbol",
+      "sample": {
+        "text": "原文重点段落。",
+        "variant": "diamond",
+        "tone": "data"
+      },
+      "source_fields": [
+        "text"
+      ]
+    },
+    {
+      "id": "key_sentence_bracket",
+      "name_zh": "重点句角标",
+      "category": "box_callout",
+      "activation": "content_auto",
+      "wechat_support": "native_static",
+      "source_policy": "verbatim_only",
+      "generated_text_policy": "forbidden",
+      "density_group": "box_callout",
+      "renderer": "key_sentence_bracket",
+      "sample": {
+        "text": "原文重点句。",
+        "tone": "insight"
+      },
+      "source_fields": [
+        "text"
+      ]
+    },
+    {
+      "id": "logic_progress_rail",
+      "name_zh": "逻辑递进轨道",
+      "category": "list_process",
+      "activation": "content_auto",
+      "wechat_support": "native_static",
+      "source_policy": "verbatim_only",
+      "generated_text_policy": "forbidden",
+      "density_group": "list_process",
+      "renderer": "logic_progress_rail",
+      "sample": {
+        "items": [
+          "第一句原文。",
+          "接着出现的原文。",
+          "最后一句原文。"
+        ]
+      },
+      "source_fields": [
+        "items[]"
+      ]
+    },
+    {
+      "id": "data_cluster_rail",
+      "name_zh": "原文数据组合轨道",
+      "category": "data_media",
+      "activation": "content_auto",
+      "wechat_support": "native_static",
+      "source_policy": "verbatim_only",
+      "generated_text_policy": "forbidden",
+      "density_group": "data_media",
+      "renderer": "data_cluster_rail",
+      "sample": {
+        "items": [
+          "2024 年原文数据。",
+          "47% 的原文结果。",
+          "3.2 倍原文变化。"
+        ]
+      },
+      "source_fields": [
+        "items[]"
       ]
     }
   ]

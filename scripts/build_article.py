@@ -40,6 +40,7 @@ def main() -> None:
         "visual_report": visual_report,
         "content_fidelity_report": fidelity,
         "semantic_marker_report": marker_report,
+        "section_visual_coverage": payload.get("section_visual_coverage", {}),
     }
     stem = input_path.stem
     html_path = output_dir / f"{stem}.wechat.html"

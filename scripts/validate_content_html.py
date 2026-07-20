@@ -12,6 +12,7 @@ from pathlib import Path
 
 ALLOWED = {"section", "p", "span", "strong", "br", "img", "blockquote", "table", "tbody", "tr", "td"}
 STYLE_OPTIONAL = {"br", "tbody", "tr"}
+ALLOWED_ATTRS = {"style", "src", "alt", "width", "height", "colspan", "rowspan"}
 THEME_ACCENTS = {"#1746A2", "#123B5D", "#4B5563", "#A35A00"}
 SEMANTIC_ACCENTS = {"#2F855A", "#B7791F", "#C53030", "#6B46C1"}
 ACCENTS = THEME_ACCENTS | SEMANTIC_ACCENTS
@@ -98,8 +99,12 @@ def validate(content_html: str, profile: str = "strict_draftbox") -> dict[str, o
         if tag not in STYLE_OPTIONAL and "style" not in attr_dict:
             p0.append(f"no inline style: <{tag}>")
         for key, value in attrs:
+            if key not in ALLOWED_ATTRS:
+                p0.append(f"unknown attr: {key}")
             if key in {"class", "id"} or key.startswith("data-"):
                 p0.append(f"forbidden attr: {key}")
+            if key == "style" and not value.strip():
+                p0.append(f"empty style attr: <{tag}>")
             if key.startswith("on"):
                 p0.append(f"event attr: {key}")
             if re.search(r"javascript\s*:", value, re.I):

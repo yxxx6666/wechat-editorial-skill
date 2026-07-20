@@ -1,47 +1,69 @@
-# Release Report — v0.5.2
+# Release Report — v0.6.2
 
-## Release scope
+## Release
 
-- Fixed deterministic recognition for `01` + next-line headings, same-line `01 标题`, Markdown headings, and HTML `<br>` transport.
-- Removed synthetic section-heading generation when the source has no headings.
-- Added exact heading count, wording, order, and generated-heading gates.
-- Replaced local `可以 / 开始` action matching with explicit instruction plus action-verb classification.
-- Added DraftBox `runtime_manifest` with Skill ID, runtime version, entrypoint, compiler, and gate execution status.
-- Added the uni-context article regression for five source headings and representative false-action phrases.
+- Version: `0.6.2`
+- Name: `Visual Marker Integrity Hotfix`
+- Skill ID: `xingchen/wechat-editorial-skill`
+- Runtime entrypoint: `scripts/build_article.py`
+- Compiler: `scripts/md_to_wechat.py`
 
-## Validation results
+## Hotfix audit
 
-- Quick: `PASS`
-- Regression: `PASS`
-- Release: `PASS`
-- Markdown examples: `30/30`
-- Marker renderers: `72/72`
-- Files: `94`
-- P0: `0`
-- P1: `0`
-- Generated copy: `0`
-- Generated labels: `0`
-- Rewritten paragraphs: `0`
-- Uni-context regression fidelity: `PASS`
-- Uni-context visual score: `92`
-- Full marker showcase visual QA: `PASS`
-- Heading fidelity visual QA: `PASS`
-- Horizontal overflow: `0`
-- Failed resources: `0`
-- Unicode replacement characters: `0`
-- Python cache / bytecode in package: `0`
+- Solid underline uses the semantic foreground color and remains visibly distinct from bold text.
+- Keyword corner outline uses a visible foreground bottom rule.
+- Malformed font-stack attributes: 0.
+- Empty style attributes: 0.
+- Registry activation split: 73 content-auto / 17 manual / 4 static fallback.
 
-## Runtime contract
+## Scope
 
-```text
-skill_id: xingchen/wechat-editorial-skill
-runtime_version: 0.5.2
-entrypoint: scripts/build_article.py
-compiler: scripts/md_to_wechat.py
-content_fidelity_gate: executed
-semantic_classifier: executed
-```
+- Editorial marker registry: `94` markers.
+- New runtime markers: `10`.
+- New separators: `6`.
+- New micro and relationship markers: paragraph lead symbol, key sentence bracket, logic progress rail, data cluster rail.
+- Existing markers activated at runtime: solid/hollow/diamond lists, zero-padded list, data badge, big number, pull quote and article end mark.
 
-## Release decision
+## Fidelity gates
 
-`RESULT: PASS`
+- Heading count/text/order preserved: pass.
+- Generated headings: 0.
+- Generated copy: 0.
+- Generated labels: 0.
+- Rewritten paragraphs: 0.
+- Source coverage complete: pass.
+
+## Visual coverage gates
+
+- `section_visual_coverage`: pass.
+- Dry sections: 0.
+- Single-marker long sections: 0.
+- Repeated adjacent visual signatures: 0.
+- Long sections without separators: 0.
+- Repeated separator types: 0.
+- Decorative symbol overload: 0.
+- Data marker underuse: 0.
+- Quote style repetition: false.
+- Unreachable runtime markers: 0.
+
+## Validation
+
+- Quick: PASS.
+- Regression: PASS.
+- Release: PASS.
+- Marker renderers: 94/94.
+- P0: 0.
+- P1: 0.
+- Full-symbol regression visual score: 100.
+- Heading-fidelity regression visual score: 100.
+- 390 px mobile horizontal overflow: 0.
+- Marker showcase horizontal overflow: 0.
+- Replacement characters: 0.
+- Cache artifacts: 0.
+
+## Artifacts
+
+- Full marker showcase: `examples/v0.6.2-all-markers-showcase.html`
+- Full symbol regression: `examples/regression/full_symbol_orchestration.md`
+- Section orchestrator regression: `examples/regression/section_visual_orchestrator.md`
+- Heading-fidelity regression: `examples/regression/unicontext_heading_fidelity.md`

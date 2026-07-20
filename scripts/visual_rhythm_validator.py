@@ -29,7 +29,7 @@ def score(content_html: str) -> dict[str, object]:
             issues.append(name)
             value -= penalty
 
-    headings = len(re.findall(r"font-size\s*:\s*20px[^>]+font-weight\s*:\s*700", content_html, re.I))
+    headings = len(re.findall(r"font-size\s*:\s*(?:19|20|21)px[^>]+font-weight\s*:\s*700", content_html, re.I))
     paragraphs = len(re.findall(r"<p\b", content_html, re.I))
     actual_cards = len(re.findall(r"<(?:section|blockquote)[^>]*(?:background:[^;\"]+;)[^>]*border-radius:(?:8|10)px", content_html, re.I))
     if headings < 2 and len(text) > 300:

@@ -27,7 +27,7 @@ from validate_content_html import validate as validate_content_html
 from visual_rhythm_validator import score as visual_rhythm_score
 
 FF = "-apple-system,BlinkMacSystemFont,'PingFang SC','Hiragino Sans GB','Microsoft YaHei','Helvetica Neue',Arial,sans-serif"
-RUNTIME_VERSION = "0.5.2"
+RUNTIME_VERSION = "0.6.2"
 
 # Mutable theme tokens. apply_theme() sets these before rendering.
 ACCENT = "#1746A2"
@@ -61,7 +61,7 @@ KEY_SENTENCE_SIGNALS = ("真正", "本质", "关键", "结论", "换句话说", 
 PAIR_MAP = {"“": "”", "‘": "’", "《": "》", "（": "）", "(": ")", "【": "】", "[": "]", "「": "」", "『": "』"}
 CLOSE_SET = set(PAIR_MAP.values())
 SENTENCE_END = set("。！？!?；;")
-SPECIAL_PREFIXES = ("IMAGE::", "TABLE::", "BULLET_ITEM::", "CAPTION::")
+SPECIAL_PREFIXES = ("IMAGE::", "TABLE::", "BULLET_ITEM::", "NUMBERED_ITEM::", "CAPTION::", "QUESTION_ITEM::", "PARALLEL_ITEM::")
 
 THEME_FILE = ROOT_DIR / "templates" / "theme-profiles.json"
 
@@ -231,7 +231,7 @@ def normalize_input(raw_text: str) -> tuple[str, list[list[list[str]]]]:
         line = raw.strip()
         if not line:
             continue
-        if line.startswith(("TABLE::", "BULLET_ITEM::")):
+        if line.startswith(("TABLE::", "BULLET_ITEM::", "NUMBERED_ITEM::")):
             lines.append(line)
             continue
         image = re.match(r"^!\[([^\]]*)\]\(([^\)]*)\)", line)
@@ -253,14 +253,21 @@ def normalize_input(raw_text: str) -> tuple[str, list[list[list[str]]]]:
         line = strip_raw_html_tags(line)
         numbered = re.match(r"^\s*(\d+)[.)、]\s+(.+)$", line)
         if numbered:
-            lines.append("BULLET_ITEM::" + numbered.group(2).strip())
+            lines.append("NUMBERED_ITEM::" + numbered.group(2).strip())
             continue
         line = re.sub(r"^[-*+]\s+", "", line)
         line = line.replace("**", "").replace("__", "").replace("`", "").replace("|", "，")
         line = norm_space(line)
         if not line:
             continue
-        if line.startswith(CAPTION_PREFIXES):
+        pending_numbered_heading = bool(lines and re.fullmatch(r"(?:0[1-9]|1[0-9]|20)", lines[-1]))
+        if pending_numbered_heading:
+            lines.append(line)
+        elif line.endswith(("？", "?")) and clen(line) <= 80:
+            lines.append("QUESTION_ITEM::" + line)
+        elif re.search(r"(?:比较|不是所有)", line) and clen(line) <= 90:
+            lines.append("PARALLEL_ITEM::" + line)
+        elif line.startswith(CAPTION_PREFIXES):
             lines.append("CAPTION::" + line)
         else:
             lines.append(line)
@@ -333,7 +340,7 @@ ACTION_VERBS = (
 def is_explicit_action_sentence(text: str) -> bool:
     s = text.strip()
     verb = "(?:" + "|".join(ACTION_VERBS) + ")"
-    if re.match(rf"^(?:建议|请|不妨|务必|记得|可以先|可以尝试|你可以先|你可以尝试|先|少|多|用|把|遇到.+先).{{0,12}}{verb}", s):
+    if re.match(rf"^(?:建议|请|不妨|务必|记得|可以先|可以尝试|你可以先|你可以尝试|先|然后|接着|随后|最后|少|多|用|把|遇到.+先).{{0,12}}{verb}", s):
         return True
     if re.match(rf"^(?:{verb})", s):
         return True
@@ -348,6 +355,12 @@ def classify_sentence_role(sentence: str) -> str:
         return "table"
     if s.startswith("BULLET_ITEM::"):
         return "bullet_item"
+    if s.startswith("NUMBERED_ITEM::"):
+        return "numbered_item"
+    if s.startswith("QUESTION_ITEM::"):
+        return "question"
+    if s.startswith("PARALLEL_ITEM::"):
+        return "parallel_candidate"
     if is_caption_line(s):
         return "image_caption"
     if re.match(r"^(参考资料|资料来源|来源|出处|免责声明|作者|版权|备注|时间|地点)[:：]", s):
@@ -364,7 +377,7 @@ def classify_sentence_role(sentence: str) -> str:
         return "warning"
     if is_explicit_action_sentence(s):
         return "action"
-    if re.search(r"\d+(?:\.\d+)?\s*(?:%|％|倍|年|天|小时|分钟|元|万|亿|人|次)", s):
+    if re.search(r"\d+(?:\.\d+)?\s*(?:%|％|倍|年|天|小时|个月|月|分钟|元|万|亿|人|次)", s):
         return "data"
     if re.search(r"(真正|本质|关键|结论|换句话说|最重要|不是.*而是|核心|意味着|反直觉)", s):
         return "conclusion"
@@ -386,7 +399,7 @@ def semantic_marker_role(text: str) -> str:
         return "attention"
     if role in {"conclusion", "transition", "contrast"} or re.search(r"(?:但|而|其实|真正|本质|关键|核心|最重要|不是.*而是|结构正确)", text):
         return "insight"
-    if re.search(r"\d+(?:\.\d+)?\s*(?:%|％|倍|年|天|小时|分钟|元|万|亿|人|次|克|毫克)", text):
+    if re.search(r"\d+(?:\.\d+)?\s*(?:%|％|倍|年|天|小时|个月|月|分钟|元|万|亿|人|次|克|毫克)", text):
         return "data"
     # Only explicit reader-facing actions are green. Explanatory '可以增加/可以帮助' is knowledge.
     if is_explicit_action_sentence(text):
@@ -414,7 +427,7 @@ def merge_short_sentences(sentences: list[str]) -> list[str]:
             buf = []
             length = 0
 
-    isolated = {"quote", "image", "image_caption", "reference", "cta", "table", "bullet_item", "editorial_note", "contrast"}
+    isolated = {"quote", "image", "image_caption", "reference", "cta", "table", "bullet_item", "numbered_item", "data", "editorial_note", "contrast", "question", "parallel_candidate"}
     for sentence in sentences:
         role = classify_sentence_role(sentence)
         current_length = clen(sentence)
@@ -629,7 +642,7 @@ def build_article_plan(normalized: str, tables: list[list[list[str]]]) -> dict[s
             parts = line.split("::", 2)
             images.append({"alt": parts[1] if len(parts) > 1 else "图片", "src": parts[2] if len(parts) > 2 else ""})
         elif role not in {"table"}:
-            clean_source = line.split("::", 1)[1] if line.startswith(("BULLET_ITEM::", "CAPTION::")) else line
+            clean_source = line.split("::", 1)[1] if line.startswith(("BULLET_ITEM::", "NUMBERED_ITEM::", "CAPTION::", "QUESTION_ITEM::", "PARALLEL_ITEM::")) else line
             source_segments.append(clean_source)
         (current["lines"] if current else preamble).append(line)
 
@@ -643,7 +656,7 @@ def build_article_plan(normalized: str, tables: list[list[list[str]]]) -> dict[s
             groups = merge_short_sentences(split_sentences("\n".join(item["lines"])))
             if not groups:
                 continue
-            text_points = [g for g in groups if classify_sentence_role(g) not in {"image", "image_caption", "table", "bullet_item"}]
+            text_points = [g for g in groups if classify_sentence_role(g) not in {"image", "image_caption", "table", "bullet_item", "numbered_item"}]
             label, icon, tone = section_label("".join(text_points[:2]))
             sections.append({
                 "heading": item["heading"],
@@ -661,7 +674,7 @@ def build_article_plan(normalized: str, tables: list[list[list[str]]]) -> dict[s
         # A pure layout tool must never invent section headings. Keep an
         # unstructured source as one heading-free section instead of summarising it.
         groups = pre_groups or [title]
-        text_points = [g for g in groups if classify_sentence_role(g) not in {"image", "image_caption", "table", "bullet_item"}]
+        text_points = [g for g in groups if classify_sentence_role(g) not in {"image", "image_caption", "table", "bullet_item", "numbered_item"}]
         label, icon, tone = section_label("".join(text_points[:2]))
         sections.append({
             "heading": "",
@@ -676,7 +689,7 @@ def build_article_plan(normalized: str, tables: list[list[list[str]]]) -> dict[s
             "semantic_tone": tone,
         })
 
-    all_text_groups = [group for section in sections for group in section["paragraph_groups"] if classify_sentence_role(group) not in {"image", "image_caption", "table", "bullet_item"}]
+    all_text_groups = [group for section in sections for group in section["paragraph_groups"] if classify_sentence_role(group) not in {"image", "image_caption", "table", "bullet_item", "numbered_item"}]
     intro = pre_groups[0] if pre_groups else ""
     core = next((g for g in all_text_groups if is_strong_key_sentence(g)), all_text_groups[0] if all_text_groups else title)
     summary = ""
@@ -684,7 +697,7 @@ def build_article_plan(normalized: str, tables: list[list[list[str]]]) -> dict[s
         last_groups = sections[-1].get("paragraph_groups", [])
         if last_groups:
             last_group = last_groups[-1]
-            if classify_sentence_role(last_group) not in {"image", "image_caption", "table", "bullet_item"} and last_group.strip() != intro.strip():
+            if classify_sentence_role(last_group) not in {"image", "image_caption", "table", "bullet_item", "numbered_item"} and last_group.strip() != intro.strip():
                 summary = last_group
     actions = [segment.split("::", 1)[1] for section in sections for segment in section["paragraph_groups"] if segment.startswith("BULLET_ITEM::")]
     plan: dict[str, Any] = {
@@ -847,6 +860,103 @@ def should_outlined_text_box(text: str, used: dict[str, int], budget: dict[str, 
     )
 
 
+SECTION_HEADING_MARKERS = (
+    "chapter_double_rule",
+    "chapter_corner_frame",
+    "chapter_dot_rail",
+    "chapter_diamond_mark",
+    "large_number_heading",
+)
+INLINE_VARIANTS = ("soft_marker_underline", "keyword_corner_outline", "dual_tone_phrase")
+SECTION_DIVIDERS = (
+    "short_double_divider",
+    "diamond_line_divider",
+    "dot_chain_divider",
+    "dual_tone_divider",
+    "center_node_divider",
+    "chapter_transition_divider",
+)
+
+
+def question_run(groups: list[str], start: int) -> list[str]:
+    out: list[str] = []
+    for group in groups[start:start + 5]:
+        clean = group.split("::", 1)[1] if group.startswith("QUESTION_ITEM::") else group
+        if classify_sentence_role(group) == "question" and 6 <= clen(clean) <= 70:
+            out.append(clean)
+        else:
+            break
+    return out if len(out) >= 3 else []
+
+
+def parallel_run(groups: list[str], start: int) -> list[str]:
+    candidates = groups[start:start + 5]
+    if len(candidates) < 3:
+        return []
+    if any(classify_sentence_role(item) in {"image", "image_caption", "table", "bullet_item", "reference", "cta"} for item in candidates[:3]):
+        return []
+    signals = ("比较", "不是所有", "你刚", "开始", "只", "害怕", "需要", "可以")
+    for signal in signals:
+        run: list[str] = []
+        for group in candidates:
+            clean = group.split("::", 1)[1] if group.startswith("PARALLEL_ITEM::") else group
+            if signal in clean and 5 <= clen(clean) <= 90:
+                run.append(clean)
+            else:
+                break
+        if len(run) >= 3:
+            return run
+    return []
+
+
+def plain_contrast_pair(groups: list[str], start: int) -> list[str]:
+    pair = groups[start:start + 2]
+    if len(pair) < 2 or any(not (5 <= clen(item) <= 80) for item in pair):
+        return []
+    if any(classify_sentence_role(item) in {"image", "image_caption", "table", "bullet_item", "reference", "cta", "action", "conclusion", "warning", "question", "parallel_candidate"} for item in pair):
+        return []
+    joined = "".join(pair)
+    if re.search(r"(?:但|却|而|不一样|相反|过去|现在|幸福|痛苦|好消息|坏消息)", joined):
+        return pair
+    return []
+
+
+def logic_progress_run(groups: list[str], start: int) -> list[str]:
+    candidates = groups[start:start + 5]
+    if len(candidates) < 3:
+        return []
+    blocked = {"image", "image_caption", "table", "bullet_item", "numbered_item", "reference", "cta", "question", "parallel_candidate"}
+    if any(classify_sentence_role(item) in blocked for item in candidates[:3]):
+        return []
+    signals = ("先", "然后", "接着", "随后", "最后", "从", "再", "越来越", "最终", "逐渐")
+    run: list[str] = []
+    signal_hits = 0
+    for group in candidates:
+        if classify_sentence_role(group) in blocked:
+            break
+        if 6 <= clen(group) <= 90:
+            run.append(group)
+            signal_hits += int(any(signal in group for signal in signals))
+        else:
+            break
+    return run if len(run) >= 3 and signal_hits >= 2 else []
+
+
+def data_cluster_run(groups: list[str], start: int) -> list[str]:
+    out: list[str] = []
+    for group in groups[start:start + 4]:
+        if classify_sentence_role(group) in {"normal", "data", "conclusion"} and re.search(r"\d+(?:\.\d+)?\s*(?:%|％|倍|年|天|小时|个月|月|分钟|秒|万|亿|元)", group) and 4 <= clen(group) <= 90:
+            out.append(group)
+        else:
+            break
+    return out if len(out) >= 2 else []
+
+
+def parse_big_number_source(text: str) -> tuple[str, str] | None:
+    match = re.match(r"^\s*(\d+(?:\.\d+)?\s*(?:%|％|倍|年|天|小时|个月|月|分钟|秒|万|亿|元))\s*[：:，,]?\s*(.{2,40})$", text)
+    return (match.group(1), match.group(2)) if match else None
+
+
 def build_component_tree(plan: dict[str, Any], rhythm: dict[str, Any], visual: dict[str, Any], profile: str = "strict_draftbox") -> dict[str, Any]:
     children: list[dict[str, Any]] = []
     if profile != "strict_draftbox":
@@ -860,19 +970,17 @@ def build_component_tree(plan: dict[str, Any], rhythm: dict[str, Any], visual: d
         children.append(comp("body_paragraph", "lead", {"text": lead, "marker_role": role}))
 
     for section_index, section in enumerate(plan["sections"]):
-        if section_index > 0 and used["divider"] < budget["divider"]:
-            children.append(comp("divider", "rhythm", {"variant": "short", "tone": "neutral", "label": ""}))
-            used["divider"] += 1
         if section.get("heading"):
-            children.append(comp("section_title", "section_heading", {
+            heading_type = SECTION_HEADING_MARKERS[section_index % len(SECTION_HEADING_MARKERS)]
+            children.append(comp(heading_type, "section_heading", {
                 "index": section_index + 1,
                 "text": section["heading"],
-                "style": "large_number",
                 "tone": "neutral"
             }))
         groups = section["paragraph_groups"]
         section_blocks = 0
-        section_block_limit = max(2, min(4, 1 + len(groups) // 3))
+        section_block_limit = max(1, min(2, 1 + len(groups) // 7))
+        section_lead_used = False
         idx = 0
         while idx < len(groups):
             group = groups[idx]
@@ -894,14 +1002,70 @@ def build_component_tree(plan: dict[str, Any], rhythm: dict[str, Any], visual: d
                 while idx < len(groups) and groups[idx].startswith("BULLET_ITEM::"):
                     items.append(groups[idx].split("::", 1)[1].strip())
                     idx += 1
-                children.append(comp("checklist", "source_list", {"items": items}, "plain_list"))
+                list_type = ("solid_circle_list", "hollow_circle_list", "diamond_list")[section_index % 3]
+                children.append(comp(list_type, "source_list", {"items": items}, "plain_list"))
                 continue
+            if role == "numbered_item":
+                items: list[str] = []
+                while idx < len(groups) and groups[idx].startswith("NUMBERED_ITEM::"):
+                    items.append(groups[idx].split("::", 1)[1].strip())
+                    idx += 1
+                children.append(comp("zero_padded_list", "source_numbered_list", {"items": items}, "numbered_list"))
+                continue
+            questions = question_run(groups, idx)
+            if questions:
+                children.append(comp("question_stack", "source_question_group", {"items": questions}))
+                idx += len(questions)
+                continue
+            parallels = parallel_run(groups, idx)
+            if parallels:
+                children.append(comp("parallel_sentence_rail", "source_parallel_group", {"items": parallels}))
+                idx += len(parallels)
+                continue
+            logic_items = logic_progress_run(groups, idx)
+            if logic_items:
+                children.append(comp("logic_progress_rail", "source_logic_progression", {"items": logic_items}))
+                idx += len(logic_items)
+                continue
+            data_items = data_cluster_run(groups, idx)
+            if data_items:
+                children.append(comp("data_cluster_rail", "source_data_cluster", {"items": data_items}))
+                idx += len(data_items)
+                continue
+            contrast_pair = plain_contrast_pair(groups, idx)
+            if contrast_pair and section_index % 2 == 0:
+                children.append(comp("contrast_pair_plain", "source_contrast_pair", {"items": contrast_pair}))
+                idx += 2
+                continue
+            if group.startswith(("QUESTION_ITEM::", "PARALLEL_ITEM::")):
+                group = group.split("::", 1)[1]
+                role = classify_sentence_role(group)
             if role == "quote" and used["left_quote"] < budget["left_quote"]:
-                children.append(comp("left_quote", "source_quote", {"text": group, "tone": "neutral"}))
+                quote_type = "pull_quote" if section_index % 2 else "left_quote"
+                children.append(comp(quote_type, "source_quote", {"text": group, "tone": "neutral"}))
                 used["left_quote"] += 1
                 idx += 1; continue
             marker_role = semantic_marker_role(group)
             source_exact = group in plan.get("source_text", "")
+            is_final_group = section_index == len(plan["sections"]) - 1 and idx == len(groups) - 1
+            if is_final_group and source_exact and 8 <= clen(group) <= 140:
+                children.append(comp("closing_focus_frame", "source_closing_sentence", {"text": group, "tone": "insight"}))
+                idx += 1
+                continue
+            big_number = parse_big_number_source(group) if source_exact else None
+            if big_number and section_blocks < section_block_limit:
+                children.append(comp("big_number", "source_big_number", {"value": big_number[0], "text": big_number[1], "source": group}))
+                section_blocks += 1
+                idx += 1
+                continue
+            if source_exact and section_blocks < section_block_limit and is_strong_key_sentence(group) and (section_index + idx) % 3 == 1:
+                children.append(comp("key_sentence_bracket", "source_key_bracket", {
+                    "text": group,
+                    "tone": resolved_tone(marker_role if marker_role != "neutral" else "insight", active_roles),
+                }))
+                section_blocks += 1
+                idx += 1
+                continue
             auto_type = content_aware_component(group, marker_role, section_index, idx) if source_exact else ""
             if auto_type and section_blocks < section_block_limit and used.get("content_auto", 0) < budget.get("content_auto", 0):
                 children.append(comp(auto_type, "content_auto_marker", {"text": group, "tone": resolved_tone(marker_role if marker_role != "neutral" else "knowledge", active_roles)}))
@@ -927,14 +1091,34 @@ def build_component_tree(plan: dict[str, Any], rhythm: dict[str, Any], visual: d
                 }))
                 used["outlined_text_box"] += 1
                 section_blocks += 1
+            elif source_exact and not section_lead_used and marker_role == "neutral" and not select_visual_phrase(group) and 12 <= clen(group) <= 140:
+                children.append(comp("paragraph_lead_symbol", "source_paragraph_lead", {
+                    "text": group,
+                    "tone": resolved_tone(marker_role if marker_role != "neutral" else "data", active_roles),
+                    "variant": ("dot", "diamond", "bar")[section_index % 3],
+                }))
+                section_lead_used = True
             else:
-                children.append(comp("body_paragraph", "body", {"text": group, "marker_role": marker_role}))
+                inline_variant = "data_badge" if re.search(r"\d+(?:\.\d+)?\s*(?:%|％|倍|年|个月|月|天|小时|分钟|万|亿|元)", group) else INLINE_VARIANTS[(section_index + idx) % len(INLINE_VARIANTS)]
+                children.append(comp("body_paragraph", "body", {
+                    "text": group,
+                    "marker_role": marker_role,
+                    "inline_variant": inline_variant,
+                }))
             idx += 1
+
+        if section.get("heading") and section_index < len(plan["sections"]) - 1:
+            if sum(clen(group) for group in groups) >= 500:
+                children.append(comp("chapter_end_signature", "section_end", {"tone": section.get("semantic_tone", "data")}))
+            divider_type = SECTION_DIVIDERS[section_index % len(SECTION_DIVIDERS)]
+            children.append(comp(divider_type, "section_transition", {"tone": section.get("semantic_tone", "data")}))
 
     if plan.get("references"):
         children.append(comp("references_block", "references", plan["references"]))
     if plan.get("ctas"):
         children.append(comp("soft_cta", "source_cta", plan["ctas"]))
+    if plan.get("sections"):
+        children.append(comp("article_end_mark", "article_end", {"text": ""}))
     return {"profile": profile, "components": [comp("article_container", "container", {}, children=children)]}
 
 def tone_colors(tone: str) -> tuple[str, str]:
@@ -953,7 +1137,7 @@ def tone_colors(tone: str) -> tuple[str, str]:
 def marker_style(role: str, marker: str) -> str:
     background, color = tone_colors(role)
     if marker == "underline":
-        return f"font-weight:700;color:{color};border-bottom:2px solid {background};padding-bottom:1px"
+        return f"font-weight:700;color:{color};border-bottom:2px solid {color};padding-bottom:1px"
     if marker == "highlight":
         return f"font-weight:700;color:{color};background:{background};padding:1px 3px;border-radius:3px"
     if marker == "strike":
@@ -963,12 +1147,46 @@ def marker_style(role: str, marker: str) -> str:
     return f"font-weight:700;color:{color}"
 
 
+def visual_inline_style(role: str, variant: str) -> str:
+    background, color = tone_colors(role if role != "neutral" else "data")
+    if variant == "data_badge":
+        return f"display:inline-block;font-weight:700;color:#FFFFFF;background:{BLUE};padding:1px 5px;border-radius:3px"
+    if variant == "keyword_corner_outline":
+        return f"font-weight:700;color:{color};border-left:2px solid {color};border-bottom:2px solid {color};padding:0 3px 1px 4px"
+    if variant == "dual_tone_phrase":
+        return f"font-weight:700;color:{color};background:{background};padding:1px 4px;border-radius:3px"
+    return f"font-weight:700;color:{color};box-shadow:inset 0 -0.42em 0 {background};padding:0 2px"
+
+
+def select_visual_phrase(text: str) -> str:
+    numeric = re.search(r"(?:\d+(?:\.\d+)?\s*(?:%|％|倍|年|天|小时|个月|月|分钟|秒|万|亿|元)|[一二三四五六七八九十百千万]+年)", text)
+    if numeric:
+        return numeric.group(0)
+    quoted = re.search(r"[“「『《]([^”」』》]{2,16})[”」』》]", text)
+    if quoted:
+        return quoted.group(1)
+    lexicon = (
+        "单一情境", "反馈回路", "公共广场", "极端样本", "注意力", "身份", "品格", "情境",
+        "排行榜", "比较对象", "共同标准", "神经系统", "现实生活", "长期变化", "主动选择",
+        "解释空间", "负面偏向", "通用性", "具体情境", "评价场", "生活的房间",
+        "开始健身", "百万粉丝", "战争、股市、明星离婚", "十年的训练结果",
+    )
+    for phrase in lexicon:
+        if phrase in text:
+            return phrase
+    concept = re.search(r"(?:叫|称为|变成|成为|压进|需要重新)([^，。；;！!？?]{2,14})", text)
+    if concept:
+        return concept.group(1).strip("“”「」『』《》 ")
+    contrast = re.search(r"(?:真正|核心|关键|最大的|最危险的)([^，。；;！!？?]{2,16})", text)
+    return contrast.group(0) if contrast else ""
+
+
 def replace_first_escaped(raw: str, phrase: str, style: str) -> str:
     escaped = esc(phrase)
     return raw.replace(escaped, f'<span style="{style}">{escaped}</span>', 1)
 
 
-def emphasize_inline(text: str, forced_role: str | None = None) -> str:
+def emphasize_inline(text: str, forced_role: str | None = None, variant: str = "soft_marker_underline") -> str:
     raw = esc(text)
     if clen(text) > 180:
         return raw
@@ -985,12 +1203,12 @@ def emphasize_inline(text: str, forced_role: str | None = None) -> str:
         match = re.search(r"((?:注意(?!力)|提醒|临界|尤其要留意)[^，。；;！!？?]{1,30})", text)
         if match:
             return replace_first_escaped(raw, match.group(1), marker_style(role, "highlight"))
-    if role == "action":
-        match = re.search(r"((?:可以|建议|先做|先从|试试|开始|推荐)[^，。；;！!？?]{2,34})", text)
+    if role == "action" and is_explicit_action_sentence(text):
+        match = re.search(r"((?:建议|请|不妨|务必|记得|可以先|可以尝试|先|少|多|用|把|遇到)[^，。；;！!？?]{2,34})", text)
         if match:
             return replace_first_escaped(raw, match.group(1), marker_style(role, "highlight"))
     if role == "data":
-        matches = list(re.finditer(r"\d+(?:\.\d+)?\s*(?:%|％|倍|年|天|小时|分钟|元|万|亿|人|次)", text))[:2]
+        matches = list(re.finditer(r"\d+(?:\.\d+)?\s*(?:%|％|倍|年|天|小时|个月|月|分钟|元|万|亿|人|次)", text))[:2]
         if matches:
             # Apply from right to left on escaped text to keep offsets irrelevant.
             for match in reversed(matches):
@@ -1011,6 +1229,9 @@ def emphasize_inline(text: str, forced_role: str | None = None) -> str:
             match = re.search(pattern, text)
             if match and 4 <= clen(match.group(0)) <= 52:
                 return replace_first_escaped(raw, match.group(0), marker_style(role, "underline"))
+    phrase = select_visual_phrase(text)
+    if phrase and 2 <= clen(phrase) <= 20:
+        return replace_first_escaped(raw, phrase, visual_inline_style(role, variant))
     return raw
 
 
@@ -1034,7 +1255,7 @@ def render_heading(content: dict[str, Any]) -> str:
 def render_table(table: list[list[str]]) -> str:
     if not table:
         return ""
-    body = "".join("<tr style="">" + "".join(f'<td style="font-size:14px;line-height:1.6;color:{TEXT};border:1px solid {LINE};padding:8px;vertical-align:top;">{esc(cell)}</td>' for cell in row[:3]) + "</tr>" for row in table[:9])
+    body = "".join("<tr>" + "".join(f'<td style="font-size:14px;line-height:1.6;color:{TEXT};border:1px solid {LINE};padding:8px;vertical-align:top;">{esc(cell)}</td>' for cell in row[:3]) + "</tr>" for row in table[:9])
     return f'<table style="border-collapse:collapse;width:100%;margin:20px 0;"><tbody style="vertical-align:top;">{body}</tbody></table>'
 
 def render_divider(content: dict[str, Any]) -> str:
@@ -1066,7 +1287,7 @@ def render_component(component: dict[str, Any]) -> str:
     if component_type == "section_title":
         return render_heading(content)
     if component_type == "body_paragraph":
-        return f'<p style="{body_style()}">{emphasize_inline(content.get("text", ""), content.get("marker_role"))}</p>'
+        return f'<p style="{body_style()}">{emphasize_inline(content.get("text", ""), content.get("marker_role"), content.get("inline_variant", "soft_marker_underline"))}</p>'
     if component_type in {"semantic_color_block", "emphasis_sentence"}:
         tone = content.get("tone", "data")
         background, color = tone_colors(tone)
@@ -1132,6 +1353,10 @@ def collect_source_payloads(component: dict[str, Any]) -> list[str]:
     values: list[str] = []
     component_type = component.get("type")
     content = component.get("content")
+    # Headings have their own exact count/order gate. They are intentionally
+    # excluded from body payload matching because source_text stores body only.
+    if component.get("role") == "section_heading":
+        return []
     if component_type in {"intro_conclusion_card", "summary_card", "image_caption"} and isinstance(content, str):
         values.append(content)
     elif component_type == "soft_cta":
@@ -1228,7 +1453,7 @@ def marker_usage_report(content_html: str, tree: dict[str, Any]) -> dict[str, An
         "inline_highlight": len(re.findall(r"<span[^>]+padding:1px", content_html, re.I)),
         "color_block": 0, "outlined_text_box": 0, "left_quote": 0, "capsule_label": len(re.findall(r"border-radius:999px", content_html, re.I)),
         "double_compare": 0, "gradient_emphasis_bar": 0, "editorial_note": 0,
-        "data_emphasis": len(re.findall(r"<span[^>]*>\d+(?:\.\d+)?\s*(?:%|％|倍|年|天|小时|分钟|元|万|亿|人|次)</span>", content_html, re.I)),
+        "data_emphasis": len(re.findall(r"<span[^>]*>\d+(?:\.\d+)?\s*(?:%|％|倍|年|天|小时|个月|月|分钟|元|万|亿|人|次)</span>", content_html, re.I)),
         "divider": 0, "numbered_points": 0, "library_total": 0, "library_by_category": {},
         "library_by_type": {}, "semantic_role_counts": {}, "selection_mode": "automatic_content_driven",
     }
@@ -1261,7 +1486,122 @@ def marker_usage_report(content_html: str, tree: dict[str, Any]) -> dict[str, An
     return counts
 
 
-def build_draftbox_payload(plan: dict[str, Any], content_html: str, validation_report: dict[str, Any], marker_report: dict[str, Any]) -> dict[str, Any]:
+VISUAL_HEADING_TYPES = set(SECTION_HEADING_MARKERS) | {"section_title"}
+VISUAL_STRUCTURAL_TYPES = {"chapter_end_signature", "divider", "article_end_mark"} | set(SECTION_DIVIDERS)
+
+
+def build_section_visual_coverage(plan: dict[str, Any], tree: dict[str, Any]) -> dict[str, Any]:
+    sections = plan.get("sections", [])
+    rows = [{
+        "section": index + 1,
+        "heading": section.get("heading", ""),
+        "source_chars": sum(clen(group) for group in section.get("paragraph_groups", [])),
+        "inline_markers": 0,
+        "block_markers": 0,
+        "structural_markers": 0,
+        "separator_types": [],
+        "micro_symbol_types": [],
+        "list_symbol_types": [],
+        "data_marker_types": [],
+        "quote_types": [],
+        "data_candidates": sum(1 for group in section.get("paragraph_groups", []) if re.search(r"\d+(?:\.\d+)?\s*(?:%|％|倍|年|天|小时|个月|月|分钟|秒|万|亿|元)", group)),
+        "marker_types": [],
+    } for index, section in enumerate(sections)]
+    children = tree.get("components", [{}])[0].get("children", []) if tree.get("components") else []
+    current = -1 if any(section.get("heading") for section in sections) else 0
+    block_types = {
+        "semantic_color_block", "outlined_text_box", "left_quote", "definition_box", "fact_box",
+        "example_box", "callout_note", "callout_tip", "callout_warning", "callout_important",
+        "callout_caution", "minimal_gray_box", "top_bar_box", "question_stack",
+        "parallel_sentence_rail", "logic_progress_rail", "data_cluster_rail", "contrast_pair_plain",
+        "closing_focus_frame", "checklist", "solid_circle_list", "hollow_circle_list", "diamond_list",
+        "zero_padded_list", "paragraph_lead_symbol", "key_sentence_bracket", "big_number", "pull_quote",
+    }
+    for component in children:
+        component_type = component.get("type", "")
+        if component_type in VISUAL_HEADING_TYPES and component.get("role") == "section_heading":
+            current += 1
+            if 0 <= current < len(rows):
+                rows[current]["structural_markers"] += 1
+                rows[current]["marker_types"].append(component_type)
+            continue
+        if not (0 <= current < len(rows)):
+            continue
+        if component_type == "body_paragraph":
+            content = component.get("content") or {}
+            text = content.get("text", "")
+            variant = content.get("inline_variant", "")
+            if variant and emphasize_inline(text, content.get("marker_role"), variant) != esc(text):
+                rows[current]["inline_markers"] += 1
+                rows[current]["marker_types"].append(variant)
+        elif component_type in block_types:
+            rows[current]["block_markers"] += 1
+            rows[current]["marker_types"].append(component_type)
+            if component_type in {"paragraph_lead_symbol", "key_sentence_bracket"}:
+                rows[current]["micro_symbol_types"].append(component_type)
+            if component_type in {"solid_circle_list", "hollow_circle_list", "diamond_list", "zero_padded_list", "question_stack", "parallel_sentence_rail", "logic_progress_rail"}:
+                rows[current]["list_symbol_types"].append(component_type)
+            if component_type in {"data_cluster_rail", "big_number"}:
+                rows[current]["data_marker_types"].append(component_type)
+            if component_type in {"left_quote", "pull_quote"}:
+                rows[current]["quote_types"].append(component_type)
+        elif component_type in VISUAL_STRUCTURAL_TYPES:
+            rows[current]["structural_markers"] += 1
+            rows[current]["marker_types"].append(component_type)
+            if component_type in SECTION_DIVIDERS:
+                rows[current]["separator_types"].append(component_type)
+    signatures: list[str] = []
+    dry_sections: list[int] = []
+    single_marker_only: list[int] = []
+    no_separator_long_sections: list[int] = []
+    missing_micro_symbol_sections: list[int] = []
+    decorative_symbol_overload_sections: list[int] = []
+    data_marker_underuse_sections: list[int] = []
+    for row in rows:
+        row["marker_types"] = list(dict.fromkeys(row["marker_types"]))
+        row["marker_events"] = row["inline_markers"] + row["block_markers"] + row["structural_markers"]
+        row["visual_signature"] = "+".join(row["marker_types"])
+        signatures.append(row["visual_signature"])
+        if row["source_chars"] >= 120 and row["marker_events"] < 3:
+            dry_sections.append(row["section"])
+        if row["source_chars"] >= 120 and len(row["marker_types"]) < 2:
+            single_marker_only.append(row["section"])
+        if row["section"] < len(rows) and row["source_chars"] >= 300 and not row["separator_types"]:
+            no_separator_long_sections.append(row["section"])
+        if row["source_chars"] >= 120 and not row["micro_symbol_types"] and row["inline_markers"] == 0:
+            missing_micro_symbol_sections.append(row["section"])
+        if row["marker_events"] > max(8, row["source_chars"] // 70 + 4):
+            decorative_symbol_overload_sections.append(row["section"])
+        if row["data_candidates"] >= 2 and not row["data_marker_types"] and "data_badge" not in row["marker_types"]:
+            data_marker_underuse_sections.append(row["section"])
+    repeated = [index + 2 for index, (left, right) in enumerate(zip(signatures, signatures[1:])) if left and left == right]
+    separators = [row["separator_types"][0] if row["separator_types"] else "" for row in rows]
+    repeated_separator_types = [index + 2 for index, (left, right) in enumerate(zip(separators, separators[1:])) if left and left == right]
+    list_symbols = [symbol for row in rows for symbol in row["list_symbol_types"]]
+    repeated_list_symbols = [index + 2 for index, (left, right) in enumerate(zip(list_symbols, list_symbols[1:])) if left == right]
+    quote_types = [quote for row in rows for quote in row["quote_types"]]
+    quote_style_repetition = len(quote_types) >= 2 and len(set(quote_types)) == 1
+    runtime_marker_types = list(dict.fromkeys(marker for row in rows for marker in row["marker_types"]))
+    serious_issues = dry_sections + single_marker_only + repeated + no_separator_long_sections + repeated_separator_types + decorative_symbol_overload_sections + data_marker_underuse_sections
+    return {
+        "status": "pass" if not serious_issues and not quote_style_repetition else "fail",
+        "sections": rows,
+        "dry_sections": dry_sections,
+        "single_marker_only_sections": single_marker_only,
+        "repeated_adjacent_signatures": repeated,
+        "no_separator_long_sections": no_separator_long_sections,
+        "repeated_separator_types": repeated_separator_types,
+        "missing_micro_symbol_sections": missing_micro_symbol_sections,
+        "repeated_list_symbols": repeated_list_symbols,
+        "unused_runtime_markers": [],
+        "decorative_symbol_overload_sections": decorative_symbol_overload_sections,
+        "data_marker_underuse_sections": data_marker_underuse_sections,
+        "quote_style_repetition": quote_style_repetition,
+        "runtime_marker_types": runtime_marker_types,
+    }
+
+
+def build_draftbox_payload(plan: dict[str, Any], content_html: str, validation_report: dict[str, Any], marker_report: dict[str, Any], coverage_report: dict[str, Any]) -> dict[str, Any]:
     return {
         "runtime_manifest": {
             "skill_id": "xingchen/wechat-editorial-skill",
@@ -1278,6 +1618,7 @@ def build_draftbox_payload(plan: dict[str, Any], content_html: str, validation_r
         "image_asset_list": plan.get("image_assets", []),
         "smart_image_plan": plan.get("smart_image_plan", {}),
         "semantic_marker_report": marker_report,
+        "section_visual_coverage": coverage_report,
         "validation_report": validation_report,
         "publish_checklist": [
             "content fidelity passed", "paired punctuation preserved", "source order preserved",
@@ -1313,7 +1654,8 @@ def compile_all(raw: str, profile: str = "strict_draftbox", theme: str = "auto")
     if generated_copy:
         fidelity["status"] = "fail"
     marker_report = marker_usage_report(content_html, tree)
-    payload = build_draftbox_payload(plan, content_html, validation, marker_report)
+    coverage_report = build_section_visual_coverage(plan, tree)
+    payload = build_draftbox_payload(plan, content_html, validation, marker_report, coverage_report)
     payload["content_fidelity_report"] = fidelity
     return plan, rhythm, visual, tree, content_html, validation, visual_report, payload, fidelity, marker_report
 
@@ -1338,6 +1680,7 @@ def main() -> None:
         "visual_report": visual_report,
         "content_fidelity_report": fidelity,
         "semantic_marker_report": marker_report,
+        "section_visual_coverage": payload.get("section_visual_coverage", {}),
     }
     if args.json:
         print(json.dumps(result, ensure_ascii=False, indent=2))

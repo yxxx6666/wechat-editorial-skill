@@ -1,10 +1,10 @@
 # 公众号排版-文章视觉
 
-> v0.5.2｜Content-Aware Article Visuals + Heading Fidelity — 把中文文章或 Markdown 排成微信公众号手机端安全 HTML 和草稿箱 JSON，原文逐字保真。
+> v0.6.2｜Visual Marker Integrity Hotfix — 把中文文章或 Markdown 排成微信公众号手机端安全 HTML 和草稿箱 JSON，原文逐字保真。
 
-[![Version](https://img.shields.io/badge/version-0.5.2-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.6.2-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Markers](https://img.shields.io/badge/markers-72-orange)](templates/editorial-marker-registry.json)
+[![Markers](https://img.shields.io/badge/markers-94-orange)](templates/editorial-marker-registry.json)
 [![Validation](https://img.shields.io/badge/validation-release%20PASS-brightgreen)](RELEASE_REPORT.md)
 
 一个 **WorkBuddy Skill**，专注于把中文 Markdown 或纯文本文章排成微信公众号可用的内联 HTML，同时生成完整的草稿箱 JSON。**原文是不可变数据**：不改写、不润色、不总结、不提炼、不扩写、不删减、不重组、不生成任何新文案。语义分析只选择稀疏的视觉样式。
@@ -16,7 +16,7 @@
 | 能力 | 说明 |
 |------|------|
 | **原文逐字保真** | 标题、小标题、引用、图片、图注、表格、参考资料和 CTA 全部按原顺序保留 |
-| **72 个文章视觉标识** | 行内强调(12) / 标题(10) / 色块Callout(16) / 引用(6) / 列表流程(10) / 数据媒体(10) / 元信息(8) |
+| **94 个文章视觉标识** | 行内强调(15) / 标题(21) / 色块Callout(20) / 引用(6) / 列表流程(13) / 数据媒体(11) / 元信息(8) |
 | **分层启用** | 13 自动安全 + 33 原文触发 + 22 手动指定 + 4 微信降级 |
 | **4 套主题** | `editorial`（知识科普）/ `business`（商业工具）/ `minimal`（观点故事）/ `course`（课程说明） |
 | **智能配图** | 封面 2.35:1 + 正文 3:4 规划，自动匹配视觉风格 |
@@ -43,7 +43,7 @@
   </tr>
 </table>
 
-> 完整 72 标识渲染图鉴：[🌐 在线预览](https://yxxx6666.github.io/wechat-editorial-skill/examples/v0.5.2-all-markers-showcase.html) ｜ [📄 源文件](examples/v0.5.2-all-markers-showcase.html)
+> 完整 94 标识渲染图鉴：[🌐 在线预览](https://yxxx6666.github.io/wechat-editorial-skill/examples/v0.6.2-all-markers-showcase.html) ｜ [📄 源文件](examples/v0.6.2-all-markers-showcase.html)
 
 ---
 
@@ -160,7 +160,7 @@ python scripts/render_marker_showcase.py -o showcase.html
 | **元信息** | 8 | 作者、日期、阅读时间、来源… |
 
 > 完整标识注册表见 [`templates/editorial-marker-registry.json`](templates/editorial-marker-registry.json)
-> 全标识渲染图鉴：[🌐 在线预览](https://yxxx6666.github.io/wechat-editorial-skill/examples/v0.5.2-all-markers-showcase.html)
+> 全标识渲染图鉴：[🌐 在线预览](https://yxxx6666.github.io/wechat-editorial-skill/examples/v0.6.2-all-markers-showcase.html)
 
 ---
 
@@ -277,7 +277,7 @@ wechat-editorial-skill/
 │   └── ...
 │
 ├── examples/                     # 示例文章
-│   ├── v0.5.2-all-markers-showcase.html  # 全标识图鉴
+│   ├── v0.6.2-all-markers-showcase.html  # 全标识图鉴
 │   ├── demo_article.md
 │   ├── before_after/                     # 改造前后对比
 │   ├── visual_polish/                    # 视觉打磨样例
@@ -370,4 +370,4 @@ MIT License — 见 [LICENSE](LICENSE)
 ## 反馈
 
 - [提交 Issue](https://github.com/yxxx6666/wechat-editorial-skill/issues)
-- [🌐 查看全标识图鉴（在线预览）](https://yxxx6666.github.io/wechat-editorial-skill/examples/v0.5.2-all-markers-showcase.html)
+- [🌐 查看全标识图鉴（在线预览）](https://yxxx6666.github.io/wechat-editorial-skill/examples/v0.6.2-all-markers-showcase.html)
