@@ -1,6 +1,6 @@
-version: 0.5.0
-name: Editorial Marker Library
-status: 大序号标题与矩形原文框增强版
+version: 0.5.2
+name: Content-Aware Article Visuals
+status: 公众号排版-文章视觉
 skill_id: xingchen/wechat-editorial-skill
 entrypoint: scripts/build_article.py
 compiler: scripts/md_to_wechat.py
@@ -17,12 +17,16 @@ validation:
   require_content_fidelity_passed: true
   require_source_coverage_complete: true
   require_source_order_preserved: true
+  require_exact_heading_count: true
+  require_exact_heading_order: true
+  forbid_generated_headings: true
+  require_runtime_manifest: true
   require_paired_punctuation: true
   require_schema_passed: true
   require_no_p0: true
   require_no_p1: true
   max_inline_marker_types_per_paragraph: 1
-  max_visible_accent_colors: 3
+  max_visible_accent_colors: content_driven
   max_gradient_emphasis_bars: 0
   forbid_detached_section_numbers: true
   forbid_third_party_watermark_removal: true

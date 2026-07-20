@@ -22,11 +22,12 @@ if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
 from sanitize_wechat_html import sanitize as sanitize_wechat_html
-from editorial_marker_library import render_library_component, source_payloads_for_library_component, source_triggered_component, library_marker_category
+from editorial_marker_library import render_library_component, source_payloads_for_library_component, source_triggered_component, content_aware_component, library_marker_category
 from validate_content_html import validate as validate_content_html
 from visual_rhythm_validator import score as visual_rhythm_score
 
 FF = "-apple-system,BlinkMacSystemFont,'PingFang SC','Hiragino Sans GB','Microsoft YaHei','Helvetica Neue',Arial,sans-serif"
+RUNTIME_VERSION = "0.5.2"
 
 # Mutable theme tokens. apply_theme() sets these before rendering.
 ACCENT = "#1746A2"
@@ -191,14 +192,24 @@ def parse_markdown_tables(lines: list[str]) -> tuple[list[str], list[list[list[s
     return out, tables
 
 
+def looks_like_section_title(value: str) -> bool:
+    text = norm_space(value)
+    return bool(
+        text
+        and clen(text) <= 32
+        and not re.search(r"[。！？!?；;]$", text)
+        and not text.startswith(("HEADING::", "TABLE::", "IMAGE::", "BULLET_ITEM::", "CAPTION::"))
+    )
+
+
 def promote_numbered_plain_headings(lines: list[str]) -> list[str]:
     out: list[str] = []
     i = 0
     while i < len(lines):
         if re.fullmatch(r"0?[1-9]|1[0-9]|20", lines[i].strip()) and i + 1 < len(lines):
             nxt = lines[i + 1].strip()
-            if nxt and not nxt.startswith(("HEADING::", "TABLE::", "IMAGE::", "BULLET_ITEM::", "CAPTION::")) and clen(nxt) <= 24 and not re.search(r"[。！？!?；;]$", nxt):
-                out.append(f"HEADING::2::{lines[i].strip()} {nxt}")
+            if looks_like_section_title(nxt):
+                out.append(f"HEADING::2::{nxt}")
                 i += 2
                 continue
         out.append(lines[i])
@@ -208,6 +219,10 @@ def promote_numbered_plain_headings(lines: list[str]) -> list[str]:
 
 def normalize_input(raw_text: str) -> tuple[str, list[list[list[str]]]]:
     text = raw_text.replace("&nbsp;", " ").replace("&ensp;", " ").replace("&emsp;", " ")
+    # Workbuddy and chat transports may deliver visual line breaks as HTML.
+    # Convert block boundaries before stripping tags so numbered source headings survive.
+    text = re.sub(r"<\s*br\s*/?\s*>", "\n", text, flags=re.I)
+    text = re.sub(r"<\s*/\s*(?:p|div|section|h[1-6]|li)\s*>", "\n", text, flags=re.I)
     text = re.sub(r"<\s*(script|style)\b[^>]*>.*?<\s*/\s*\1\s*>", " ", text, flags=re.I | re.S)
     raw_lines = normalize_lonely_bullet_lines(split_inline_markdown_table_lines(text.splitlines()))
     parsed, tables = parse_markdown_tables(raw_lines)
@@ -229,6 +244,10 @@ def normalize_input(raw_text: str) -> tuple[str, list[list[list[str]]]]:
             heading_text = norm_space(strip_raw_html_tags(strip_markdown_links_keep_text(heading.group(2))))
             if heading_text:
                 lines.append(heading_text if level == 1 and not lines else f"HEADING::{level}::{heading_text}")
+            continue
+        numbered_heading = re.match(r"^(0[1-9]|1[0-9]|20)\s*[｜|:：、.．-]?\s*(.+)$", line)
+        if numbered_heading and looks_like_section_title(numbered_heading.group(2)):
+            lines.append(f"HEADING::2::{numbered_heading.group(2).strip()}")
             continue
         line = strip_markdown_links_keep_text(line)
         line = strip_raw_html_tags(line)
@@ -304,6 +323,23 @@ def is_caption_line(line: str) -> bool:
     return line.startswith("CAPTION::") or line.startswith(CAPTION_PREFIXES)
 
 
+ACTION_VERBS = (
+    "选择", "尝试", "关闭", "减少", "记录", "设置", "检查", "订阅", "替代", "停止",
+    "保存", "删除", "建立", "使用", "执行", "完成", "整理", "确认", "比较", "问",
+    "回到", "离开", "限制", "屏蔽", "保留", "阅读", "观察", "写下", "列出", "调整",
+)
+
+
+def is_explicit_action_sentence(text: str) -> bool:
+    s = text.strip()
+    verb = "(?:" + "|".join(ACTION_VERBS) + ")"
+    if re.match(rf"^(?:建议|请|不妨|务必|记得|可以先|可以尝试|你可以先|你可以尝试|先|少|多|用|把|遇到.+先).{{0,12}}{verb}", s):
+        return True
+    if re.match(rf"^(?:{verb})", s):
+        return True
+    return bool(re.search(rf"[。；;]\s*(?:建议|请|不妨|可以先|先).{{0,12}}{verb}", s))
+
+
 def classify_sentence_role(sentence: str) -> str:
     s = sentence.strip()
     if s.startswith("IMAGE::"):
@@ -326,7 +362,7 @@ def classify_sentence_role(sentence: str) -> str:
         return "contrast"
     if re.search(r"(危险|警惕|禁止|不要|不能|错误|代价|小心|风险)", s):
         return "warning"
-    if re.search(r"(可以|建议|先做|先从|行动|开始|试试|步骤|推荐)", s):
+    if is_explicit_action_sentence(s):
         return "action"
     if re.search(r"\d+(?:\.\d+)?\s*(?:%|％|倍|年|天|小时|分钟|元|万|亿|人|次)", s):
         return "data"
@@ -340,18 +376,23 @@ def classify_sentence_role(sentence: str) -> str:
 
 
 def semantic_marker_role(text: str) -> str:
+    """Classify the whole sentence; local words such as 可以 never decide alone."""
     role = classify_sentence_role(text)
     if re.search(r"你以为|过去常说|旧做法|常见误区|误区是|表面答案", text):
         return "old_belief"
-    if role == "warning":
+    if re.search(r"(危险|警惕|禁止|不要|不能|错误|代价|风险|小心|不可)", text):
         return "risk"
-    if re.search(r"注意(?!力)|提醒|临界|尤其要留意", text):
+    if re.search(r"注意(?!力)|提醒|临界|尤其要留意|值得重视|需要留意", text):
         return "attention"
-    # Whole-sentence judgment outranks a local action keyword such as “可以”.
-    if role in {"conclusion", "transition", "contrast"} or re.search(r"(?:但|而|其实|真正|本质|关键|不是.*而是)", text):
+    if role in {"conclusion", "transition", "contrast"} or re.search(r"(?:但|而|其实|真正|本质|关键|核心|最重要|不是.*而是|结构正确)", text):
         return "insight"
-    if role == "action":
+    if re.search(r"\d+(?:\.\d+)?\s*(?:%|％|倍|年|天|小时|分钟|元|万|亿|人|次|克|毫克)", text):
+        return "data"
+    # Only explicit reader-facing actions are green. Explanatory '可以增加/可以帮助' is knowledge.
+    if is_explicit_action_sentence(text):
         return "action"
+    if re.search(r"(研究|数据显示|证据|表明|发现|是指|指的是|意味着|原因|作用|参与|提供|来自|取决于|能够|有助于|可以增加|可以帮助|会影响|可能影响)", text):
+        return "knowledge"
     if role == "data":
         return "data"
     return "neutral"
@@ -617,28 +658,23 @@ def build_article_plan(normalized: str, tables: list[list[list[str]]]) -> dict[s
                 "semantic_tone": tone,
             })
     else:
+        # A pure layout tool must never invent section headings. Keep an
+        # unstructured source as one heading-free section instead of summarising it.
         groups = pre_groups or [title]
-        target = max(2, min(5, (len(groups) + 1) // 2 or 2))
-        size = max(1, (len(groups) + target - 1) // target)
-        chunks = [groups[i:i + size] for i in range(0, len(groups), size)]
-        for idx, chunk in enumerate(chunks[:6]):
-            if not chunk:
-                continue
-            text_points = [g for g in chunk if classify_sentence_role(g) not in {"image", "image_caption", "table", "bullet_item"}]
-            heading = compact_heading("".join(text_points), idx, article_type)
-            label, icon, tone = section_label("".join(text_points[:2]))
-            sections.append({
-                "heading": heading,
-                "goal": "降低阅读阻力，形成连续阅读节奏",
-                "raw_points": text_points,
-                "paragraph_groups": chunk,
-                "key_sentence": choose_section_key_sentence(text_points),
-                "key_sentence_candidates": [x for x in text_points if classify_sentence_role(x) in {"conclusion", "transition", "warning", "contrast", "data", "action"}],
-                "heading_style": choose_heading_style(article_type, idx),
-                "road_sign_label": label,
-                "road_sign_icon": icon,
-                "semantic_tone": tone,
-            })
+        text_points = [g for g in groups if classify_sentence_role(g) not in {"image", "image_caption", "table", "bullet_item"}]
+        label, icon, tone = section_label("".join(text_points[:2]))
+        sections.append({
+            "heading": "",
+            "goal": "逐字保留无标题原文并降低阅读阻力",
+            "raw_points": text_points,
+            "paragraph_groups": groups,
+            "key_sentence": choose_section_key_sentence(text_points),
+            "key_sentence_candidates": [x for x in text_points if classify_sentence_role(x) in {"conclusion", "transition", "warning", "contrast", "data", "action"}],
+            "heading_style": "none",
+            "road_sign_label": label,
+            "road_sign_icon": icon,
+            "semantic_tone": tone,
+        })
 
     all_text_groups = [group for section in sections for group in section["paragraph_groups"] if classify_sentence_role(group) not in {"image", "image_caption", "table", "bullet_item"}]
     intro = pre_groups[0] if pre_groups else ""
@@ -683,33 +719,32 @@ def build_article_plan(normalized: str, tables: list[list[list[str]]]) -> dict[s
 
 
 def choose_semantic_roles(plan: dict[str, Any]) -> list[str]:
-    counts = {role: 0 for role in ("risk", "attention", "action", "data", "insight")}
+    counts = {role: 0 for role in ("knowledge", "data", "risk", "attention", "action", "insight", "old_belief")}
     for section in plan.get("sections", []):
         for group in section.get("paragraph_groups", []):
             role = semantic_marker_role(group)
             if role in counts:
                 counts[role] += 1
-    active: list[str] = ["data"] if counts["data"] else []
-    # Risk has priority over decorative insight. Action comes next.
-    for role in ("risk", "action", "attention", "insight"):
-        if counts[role] and len([x for x in active if x != "data"]) < 2:
-            active.append(role)
-    return active
+    # Content decides the palette. Do not suppress a valid semantic role to satisfy a fixed color quota.
+    return [role for role in ("knowledge", "data", "action", "risk", "attention", "insight", "old_belief") if counts[role]]
 
 
 def marker_budget(plan: dict[str, Any]) -> dict[str, int]:
     length = clen(plan.get("source_text", ""))
+    sections=max(1,len(plan.get("sections", [])))
+    semantic_candidates=sum(1 for section in plan.get("sections", []) for group in section.get("paragraph_groups", []) if semantic_marker_role(group)!="neutral")
+    scale=max(1, min(8, semantic_candidates//3 + sections//2))
     return {
         "gradient_emphasis_bar": 0,
-        "semantic_color_block": 1 if length < 1200 else 2,
-        "outlined_text_box": 1 if length < 1200 else 2,
-        "left_quote": 1 if length < 1000 else 2,
+        "semantic_color_block": max(1, min(4, scale//2 + 1)),
+        "outlined_text_box": max(1, min(4, sections//2 + 1)),
+        "left_quote": max(1, min(3, sections)),
         "double_compare": 0,
         "editorial_note": 0,
         "numbered_points": 0,
-        "divider": max(0, min(3, len(plan.get("sections", [])) - 1)),
+        "divider": max(0, min(6, sections - 1)),
         "capsule_label": 0,
-        "source_triggered": 2 if length < 1200 else 4,
+        "content_auto": max(3, min(16, semantic_candidates + sections)),
     }
 
 def build_text_rhythm_plan(plan: dict[str, Any]) -> dict[str, Any]:
@@ -730,12 +765,12 @@ def build_visual_plan(plan: dict[str, Any], theme_name: str) -> dict[str, Any]:
         "accent_color": ACCENT,
         "heading_styles": [section["heading_style"] for section in plan["sections"]],
         "semantic_marker_system": {
-            "mode": "automatic_sparse",
+            "mode": "automatic_content_driven",
             "active_roles": active,
             "max_inline_marker_types_per_paragraph": 1,
-            "max_semantic_accent_colors_per_article": 3,
+            "max_semantic_accent_colors_per_article": "content_driven",
             "budget": marker_budget(plan),
-            "palette": {"knowledge": ACCENT, "action": GREEN, "attention": ORANGE, "risk": RED, "insight": PURPLE, "old_belief": GREY},
+            "palette": {"knowledge": ACCENT, "data": ACCENT, "action": GREEN, "attention": ORANGE, "risk": RED, "insight": PURPLE, "old_belief": GREY},
             "grammar": {
                 "underline": "light emphasis or key judgment",
                 "strikethrough": "corrected old belief only",
@@ -797,11 +832,11 @@ def should_color_block(text: str, used: dict[str, int], budget: dict[str, int]) 
 
 
 def resolved_tone(role: str, active_roles: set[str]) -> str:
+    if role == "knowledge":
+        return "data"
     if role in {"neutral", "old_belief"}:
         return role
-    if role == "data":
-        return "data"
-    return role if role in active_roles else "data"
+    return role
 
 
 def should_outlined_text_box(text: str, used: dict[str, int], budget: dict[str, int]) -> bool:
@@ -822,21 +857,22 @@ def build_component_tree(plan: dict[str, Any], rhythm: dict[str, Any], visual: d
 
     for lead in plan.get("lead_groups", []):
         role = semantic_marker_role(lead)
-        if role not in active_roles and role not in {"old_belief", "data"}:
-            role = "neutral"
         children.append(comp("body_paragraph", "lead", {"text": lead, "marker_role": role}))
 
     for section_index, section in enumerate(plan["sections"]):
         if section_index > 0 and used["divider"] < budget["divider"]:
             children.append(comp("divider", "rhythm", {"variant": "short", "tone": "neutral", "label": ""}))
             used["divider"] += 1
-        children.append(comp("section_title", "section_heading", {
-            "index": section_index + 1,
-            "text": section["heading"],
-            "style": "large_number",
-            "tone": "neutral"
-        }))
+        if section.get("heading"):
+            children.append(comp("section_title", "section_heading", {
+                "index": section_index + 1,
+                "text": section["heading"],
+                "style": "large_number",
+                "tone": "neutral"
+            }))
         groups = section["paragraph_groups"]
+        section_blocks = 0
+        section_block_limit = max(2, min(4, 1 + len(groups) // 3))
         idx = 0
         while idx < len(groups):
             group = groups[idx]
@@ -866,15 +902,14 @@ def build_component_tree(plan: dict[str, Any], rhythm: dict[str, Any], visual: d
                 idx += 1; continue
             marker_role = semantic_marker_role(group)
             source_exact = group in plan.get("source_text", "")
-            triggered_type = source_triggered_component(group) if source_exact else ""
-            if triggered_type and used.get("source_triggered", 0) < budget.get("source_triggered", 0):
-                children.append(comp(triggered_type, "source_triggered_marker", {"text": group, "tone": resolved_tone(marker_role if marker_role != "neutral" else "data", active_roles)}))
-                used["source_triggered"] = used.get("source_triggered", 0) + 1
+            auto_type = content_aware_component(group, marker_role, section_index, idx) if source_exact else ""
+            if auto_type and section_blocks < section_block_limit and used.get("content_auto", 0) < budget.get("content_auto", 0):
+                children.append(comp(auto_type, "content_auto_marker", {"text": group, "tone": resolved_tone(marker_role if marker_role != "neutral" else "knowledge", active_roles)}))
+                used["content_auto"] = used.get("content_auto", 0) + 1
+                section_blocks += 1
                 idx += 1
                 continue
-            if marker_role not in active_roles and marker_role not in {"old_belief", "data"}:
-                marker_role = "neutral"
-            if source_exact and should_color_block(group, used, budget) and marker_role != "neutral":
+            if source_exact and section_blocks < section_block_limit and should_color_block(group, used, budget) and marker_role != "neutral":
                 children.append(comp("semantic_color_block", "source_key_sentence", {
                     "text": group,
                     "tone": resolved_tone(marker_role, active_roles),
@@ -882,7 +917,8 @@ def build_component_tree(plan: dict[str, Any], rhythm: dict[str, Any], visual: d
                     "icon": "",
                 }))
                 used["semantic_color_block"] += 1
-            elif source_exact and should_outlined_text_box(group, used, budget):
+                section_blocks += 1
+            elif source_exact and section_blocks < section_block_limit and should_outlined_text_box(group, used, budget):
                 children.append(comp("outlined_text_box", "source_text_box", {
                     "text": group,
                     "tone": resolved_tone(marker_role if marker_role != "neutral" else "data", active_roles),
@@ -890,6 +926,7 @@ def build_component_tree(plan: dict[str, Any], rhythm: dict[str, Any], visual: d
                     "icon": "",
                 }))
                 used["outlined_text_box"] += 1
+                section_blocks += 1
             else:
                 children.append(comp("body_paragraph", "body", {"text": group, "marker_role": marker_role}))
             idx += 1
@@ -907,6 +944,7 @@ def tone_colors(tone: str) -> tuple[str, str]:
         "attention": (ORANGE_BG, ORANGE),
         "insight": (PURPLE_BG, PURPLE),
         "data": (BLUE_BG, ACCENT),
+        "knowledge": (BLUE_BG, ACCENT),
         "old_belief": (GREY_BG, GREY),
     }
     return mapping.get(tone, (BLUE_BG, ACCENT))
@@ -958,6 +996,15 @@ def emphasize_inline(text: str, forced_role: str | None = None) -> str:
             for match in reversed(matches):
                 raw = replace_first_escaped(raw, match.group(0), marker_style(role, "data"))
             return raw
+    if role == "knowledge":
+        patterns = [
+            r"[^，。；;！!？?]{2,20}(?:是指|指的是|意味着|取决于|参与|提供|来自|能够|有助于|可以增加|可以帮助|会影响|可能影响)[^，。；;！!？?]{2,26}",
+            r"(?:研究|数据显示|证据|结果|原因|作用)[^，。；;！!？?]{2,34}",
+        ]
+        for pattern in patterns:
+            match = re.search(pattern, text)
+            if match and 4 <= clen(match.group(0)) <= 52:
+                return replace_first_escaped(raw, match.group(0), marker_style("data", "underline"))
     if role == "insight":
         patterns = [r"不是[^，。；;！!？?]{2,30}而是[^，。；;！!？?]{2,36}", r"真正[^，。；;！!？?]{2,36}", r"本质[^，。；;！!？?]{2,36}", r"关键[^，。；;！!？?]{2,36}"]
         for pattern in patterns:
@@ -1149,15 +1196,19 @@ def build_fidelity_report(plan: dict[str, Any], tree: dict[str, Any]) -> dict[st
         if normalized_segment and normalized_segment not in coverage_text:
             missing_source_segments.append(segment)
     source_heads = plan.get("source_outline", [])
-    output_heads = [section.get("heading", "") for section in plan.get("sections", [])]
-    headings_preserved = all(heading in output_heads for heading in source_heads)
+    output_heads = [section.get("heading", "") for section in plan.get("sections", []) if section.get("heading")]
+    headings_preserved = source_heads == output_heads
+    no_generated_headings = not output_heads or bool(source_heads)
     unbalanced_source = [segment for segment in plan.get("source_segments", []) if not balanced_pairs(segment)]
     unbalanced_output = [payload for payload in visible_payloads if not balanced_pairs(payload)]
     forbidden = [phrase for phrase in FORBIDDEN_TEMPLATE if phrase in "".join(visible_payloads + output_heads)]
-    status = "pass" if not invented and not missing_source_segments and order_preserved and headings_preserved and not unbalanced_source and not unbalanced_output and not forbidden else "fail"
+    status = "pass" if not invented and not missing_source_segments and order_preserved and headings_preserved and no_generated_headings and not unbalanced_source and not unbalanced_output and not forbidden else "fail"
     return {
         "status": status,
         "headings_preserved": headings_preserved,
+        "heading_count_preserved": len(source_heads) == len(output_heads),
+        "heading_order_preserved": source_heads == output_heads,
+        "generated_headings": [] if source_heads == output_heads else [heading for heading in output_heads if heading not in source_heads],
         "source_headings": source_heads,
         "output_headings": output_heads,
         "source_order_preserved": order_preserved,
@@ -1179,6 +1230,7 @@ def marker_usage_report(content_html: str, tree: dict[str, Any]) -> dict[str, An
         "double_compare": 0, "gradient_emphasis_bar": 0, "editorial_note": 0,
         "data_emphasis": len(re.findall(r"<span[^>]*>\d+(?:\.\d+)?\s*(?:%|％|倍|年|天|小时|分钟|元|万|亿|人|次)</span>", content_html, re.I)),
         "divider": 0, "numbered_points": 0, "library_total": 0, "library_by_category": {},
+        "library_by_type": {}, "semantic_role_counts": {}, "selection_mode": "automatic_content_driven",
     }
     def walk(component: dict[str, Any]) -> None:
         mapping = {
@@ -1193,8 +1245,15 @@ def marker_usage_report(content_html: str, tree: dict[str, Any]) -> dict[str, An
             counts[key] += 1
         category = library_marker_category(component.get("type", ""))
         if category:
+            marker_type=component.get("type", "")
             counts["library_total"] += 1
             counts["library_by_category"][category] = counts["library_by_category"].get(category, 0) + 1
+            counts["library_by_type"][marker_type] = counts["library_by_type"].get(marker_type, 0) + 1
+        content=component.get("content")
+        if isinstance(content, dict):
+            semantic_role=content.get("marker_role") or (content.get("tone") if component.get("role") in {"content_auto_marker","source_key_sentence","source_text_box"} else None)
+            if semantic_role and semantic_role != "neutral":
+                counts["semantic_role_counts"][semantic_role] = counts["semantic_role_counts"].get(semantic_role, 0) + 1
         for child in component.get("children", []):
             walk(child)
     for root in tree.get("components", []):
@@ -1204,6 +1263,14 @@ def marker_usage_report(content_html: str, tree: dict[str, Any]) -> dict[str, An
 
 def build_draftbox_payload(plan: dict[str, Any], content_html: str, validation_report: dict[str, Any], marker_report: dict[str, Any]) -> dict[str, Any]:
     return {
+        "runtime_manifest": {
+            "skill_id": "xingchen/wechat-editorial-skill",
+            "runtime_version": RUNTIME_VERSION,
+            "entrypoint": "scripts/build_article.py",
+            "compiler": "scripts/md_to_wechat.py",
+            "content_fidelity_gate": "executed",
+            "semantic_classifier": "executed",
+        },
         "title": plan["title"],
         "digest": plan["digest"][:120],
         "content_html": content_html,
@@ -1214,7 +1281,7 @@ def build_draftbox_payload(plan: dict[str, Any], content_html: str, validation_r
         "validation_report": validation_report,
         "publish_checklist": [
             "content fidelity passed", "paired punctuation preserved", "source order preserved",
-            "semantic markers are meaning-driven and sparse", "one inline marker type maximum per paragraph",
+            "semantic markers are content-driven and visually expressive", "one inline marker type maximum per paragraph",
             "gradient emphasis no more than one", "section numbers bound to headings",
             "cover 2.35:1 and center 1:1 crop safe", "inline images 3:4 when needed",
             "third-party copyright watermarks are never removed", "strict_draftbox passed",

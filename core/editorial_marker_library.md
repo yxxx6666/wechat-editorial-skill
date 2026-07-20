@@ -1,8 +1,8 @@
-# Editorial Marker Library
+# Content-Aware Article Visuals
 
 ## 目标
 
-v0.5.0 将 72 个文章视觉标识统一收录到注册表、Schema、渲染器、展示页和发布测试中。完整组件库不等于一篇文章全部显示。
+v0.5.2 继续将 72 个文章视觉标识统一收录到注册表、Schema、渲染器、展示页和发布测试中。完整组件库不等于一篇文章全部显示。
 
 ## 四级启用
 
@@ -24,5 +24,5 @@ v0.5.0 将 72 个文章视觉标识统一收录到注册表、Schema、渲染器
 - 注册表：`templates/editorial-marker-registry.json`
 - 渲染器：`scripts/editorial_marker_library.py`
 - 展示生成器：`scripts/render_marker_showcase.py`
-- 全量展示页：`examples/v0.5.0-all-markers-showcase.html`
+- 全量展示页：`examples/v0.5.2-all-markers-showcase.html`
 - 目录：`references/editorial-marker-catalog.md`

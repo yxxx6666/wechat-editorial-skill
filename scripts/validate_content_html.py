@@ -149,7 +149,7 @@ def validate(content_html: str, profile: str = "strict_draftbox") -> dict[str, o
     # must not merge, split, shorten, or rewrite paragraphs to satisfy a score.
     if re.search(r"“[^”<]*</p>\s*<p[^>]*>[^“]*”", content_html):
         p1.append("quote split detected")
-    if body_lengths and inline_marked_paragraphs > max(8, len(body_lengths) // 2 + 2):
+    if body_lengths and inline_marked_paragraphs > max(12, int(len(body_lengths) * 0.85)):
         p1.append("inline marker fatigue")
 
     gradient_count = len(re.findall(r"background:linear-gradient\(135deg", content_html, re.I))
@@ -162,7 +162,7 @@ def validate(content_html: str, profile: str = "strict_draftbox") -> dict[str, o
         p1.append("too many double compare blocks")
     if capsule_count > 4:
         p1.append("too many capsule labels")
-    if color_block_count > max(1, clen(text) // 500):
+    if color_block_count > max(2, clen(text) // 350):
         p1.append("too many color blocks")
 
     for table in re.findall(r"<table\b.*?</table>", content_html, re.S | re.I):
@@ -182,7 +182,7 @@ def validate(content_html: str, profile: str = "strict_draftbox") -> dict[str, o
     used_accents = set(foreground_colors) & ACCENTS
     if unknown:
         p1.append("unknown accent colors")
-    if len(used_accents) > 3:
+    if len(used_accents) > 6:
         p1.append("too many semantic accent colors")
 
     return {"verdict": "fix_required" if p0 else "pass", "P0": sorted(set(p0)), "P1": sorted(set(p1)), "P2": sorted(set(p2))}

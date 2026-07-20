@@ -1,8 +1,8 @@
 # 公众号排版-文章视觉
 
-> v0.5.0｜Editorial Marker Library — 把中文文章或 Markdown 排成微信公众号手机端安全 HTML 和草稿箱 JSON，原文逐字保真。
+> v0.5.2｜Content-Aware Article Visuals + Heading Fidelity — 把中文文章或 Markdown 排成微信公众号手机端安全 HTML 和草稿箱 JSON，原文逐字保真。
 
-[![Version](https://img.shields.io/badge/version-0.5.0-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.5.2-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Markers](https://img.shields.io/badge/markers-72-orange)](templates/editorial-marker-registry.json)
 [![Validation](https://img.shields.io/badge/validation-release%20PASS-brightgreen)](RELEASE_REPORT.md)
@@ -43,7 +43,7 @@
   </tr>
 </table>
 
-> 完整 72 标识渲染图鉴：[🌐 在线预览](https://yxxx6666.github.io/wechat-editorial-skill/examples/v0.5.0-all-markers-showcase.html) ｜ [📄 源文件](examples/v0.5.0-all-markers-showcase.html)
+> 完整 72 标识渲染图鉴：[🌐 在线预览](https://yxxx6666.github.io/wechat-editorial-skill/examples/v0.5.2-all-markers-showcase.html) ｜ [📄 源文件](examples/v0.5.2-all-markers-showcase.html)
 
 ---
 
@@ -160,7 +160,7 @@ python scripts/render_marker_showcase.py -o showcase.html
 | **元信息** | 8 | 作者、日期、阅读时间、来源… |
 
 > 完整标识注册表见 [`templates/editorial-marker-registry.json`](templates/editorial-marker-registry.json)
-> 全标识渲染图鉴：[🌐 在线预览](https://yxxx6666.github.io/wechat-editorial-skill/examples/v0.5.0-all-markers-showcase.html)
+> 全标识渲染图鉴：[🌐 在线预览](https://yxxx6666.github.io/wechat-editorial-skill/examples/v0.5.2-all-markers-showcase.html)
 
 ---
 
@@ -277,7 +277,7 @@ wechat-editorial-skill/
 │   └── ...
 │
 ├── examples/                     # 示例文章
-│   ├── v0.5.0-all-markers-showcase.html  # 全标识图鉴
+│   ├── v0.5.2-all-markers-showcase.html  # 全标识图鉴
 │   ├── demo_article.md
 │   ├── before_after/                     # 改造前后对比
 │   ├── visual_polish/                    # 视觉打磨样例
@@ -290,6 +290,21 @@ wechat-editorial-skill/
 ---
 
 ## 版本历史
+
+### v0.5.2｜Heading Fidelity Runtime Guard
+
+- 修复标题保真：删除自动提炼，防止正文被提升为章节标题
+- 标题门禁升级为数量/原文/顺序完全一致，新增 `generated_headings` P0
+- 修复行动语义："可以传播/可以识别/开始害怕"等不再机械标绿
+- DraftBox 新增 `runtime_manifest` 运行时清单
+- 新增回归样例 "为什么网络让世界越来越负面"
+
+### v0.5.1｜Content-Aware Article Visuals
+
+- 不设置单篇固定标识种类上限，标识数量由内容决定
+- 语义角色扩展为知识/数据/行动/风险/注意/洞察/旧认知
+- 修复 "可以增加/可以帮助" 被机械标成绿色行动
+- 新增内容自动组件选择器与语义角色使用报告
 
 ### v0.5.0｜Editorial Marker Library
 
@@ -355,4 +370,4 @@ MIT License — 见 [LICENSE](LICENSE)
 ## 反馈
 
 - [提交 Issue](https://github.com/yxxx6666/wechat-editorial-skill/issues)
-- [🌐 查看全标识图鉴（在线预览）](https://yxxx6666.github.io/wechat-editorial-skill/examples/v0.5.0-all-markers-showcase.html)
+- [🌐 查看全标识图鉴（在线预览）](https://yxxx6666.github.io/wechat-editorial-skill/examples/v0.5.2-all-markers-showcase.html)

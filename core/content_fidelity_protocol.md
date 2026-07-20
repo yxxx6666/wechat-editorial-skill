@@ -28,6 +28,9 @@
 - `source_coverage_complete: true`
 - `source_order_preserved: true`
 - `headings_preserved: true`
+- `heading_count_preserved: true`
+- `heading_order_preserved: true`
+- `generated_headings: []`
 - `invented_content: []`
 - `generated_copy: []`
 - `generated_labels: 0`
@@ -37,4 +40,4 @@
 - `template_injection: []`
 - 成对标点完整
 
-任何新增文案均为 P0，立即阻断发布。
+任何新增文案均为 P0，立即阻断发布。标题只能来自原文显式结构；无标题原文不得自动生成章节标题。

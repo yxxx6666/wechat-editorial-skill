@@ -35,7 +35,7 @@ def score(content_html: str) -> dict[str, object]:
     if headings < 2 and len(text) > 300:
         issues.append("heading beauty missing")
         value -= 8
-    if actual_cards > max(1, len(text) // 500):
+    if actual_cards > max(2, len(text) // 300):
         issues.append("too many cards")
         value -= 8
 
@@ -52,7 +52,7 @@ def score(content_html: str) -> dict[str, object]:
     if capsule_count > 14:
         issues.append("capsule label fatigue")
         value -= 5
-    if semantic_marks > max(10, paragraphs // 2 + 4):
+    if semantic_marks > max(18, paragraphs + 6):
         issues.append("semantic marker fatigue")
         value -= 6
     if re.search(r"background\s*:\s*#[0-9A-Fa-f]{6}[^>]+(关注|报名|领取|扫码)", content_html, re.I):

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Static WeChat-safe renderers for the v0.5.0 editorial marker registry."""
+"""Static WeChat-safe renderers for the v0.5.2 content-aware editorial marker registry."""
 from __future__ import annotations
 import html, json, re
 from pathlib import Path
@@ -20,6 +20,28 @@ def source_triggered_component(text):
     stripped=str(text or '').strip()
     for prefix,marker in pairs:
         if stripped.startswith(prefix): return marker
+    return ''
+
+def content_aware_component(text, semantic_role='neutral', section_index=0, group_index=0):
+    """Select a block marker from source semantics without generating copy."""
+    raw=str(text or '').strip()
+    explicit=source_triggered_component(raw)
+    if explicit:
+        return explicit
+    if not (16 <= len(raw) <= 150):
+        return ''
+    if re.search(r'^(?:所谓|定义为)|(?:是指|指的是)', raw):
+        return 'definition_box'
+    if re.search(r'^(?:例如|比如|举例来说|以.+为例)', raw):
+        return 'example_box'
+    if semantic_role=='risk' and re.search(r'(记住|必须|务必|不要|不能|警惕|风险|禁止)', raw):
+        return 'callout_caution'
+    if semantic_role=='attention' and re.search(r'(注意|提醒|尤其|需要留意|值得重视)', raw):
+        return 'callout_warning'
+    if semantic_role=='insight' and re.search(r'(真正|本质|关键|核心|最重要|值得记住|结构正确|不是.+而是)', raw):
+        return ('callout_important' if (section_index+group_index)%2==0 else 'top_bar_box')
+    if semantic_role in {'knowledge','data'} and re.search(r'(研究|数据|证据|表明|发现|原因|作用|意味着|取决于|参与|提供)', raw):
+        return ('fact_box' if (section_index+group_index)%2==0 else 'minimal_gray_box')
     return ''
 def source_payloads_for_library_component(marker_id,content):
     if marker_id not in library_marker_ids(): return []

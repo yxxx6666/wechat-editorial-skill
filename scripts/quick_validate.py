@@ -16,17 +16,17 @@ SCRIPT_DIR = ROOT / "scripts"
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
-from md_to_wechat import compile_all, render_component
+from md_to_wechat import compile_all, render_component, semantic_marker_role
 
-VERSION = "0.5.0"
+VERSION = "0.5.2"
 REQUIRED = [
     "SKILL.md", "agents/openai.yaml", "README.md", "VERSION.md", "CHANGELOG.md", "pipeline.yaml",
     "scripts/md_to_wechat.py", "scripts/build_article.py", "scripts/sanitize_wechat_html.py",
     "scripts/validate_content_html.py", "scripts/visual_rhythm_validator.py",
-    "core/semantic_marker_system.md", "core/content_fidelity_protocol.md", "core/wechat_component_contract.md",
+    "core/semantic_marker_system.md", "core/content_aware_article_visual.md", "core/content_fidelity_protocol.md", "core/wechat_component_contract.md",
     "references/semantic-marker-examples.md", "references/editorial-marker-catalog.md", "templates/theme-profiles.json", "templates/editorial-marker-registry.json",
     "scripts/editorial_marker_library.py", "scripts/render_marker_showcase.py", "core/editorial_marker_library.md",
-    "examples/v0.5.0-all-markers-showcase.html",
+    "examples/v0.5.2-all-markers-showcase.html",
     "schema/article_plan.schema.json", "schema/component_tree.schema.json", "schema/draftbox_payload.schema.json",
 ]
 
@@ -184,11 +184,11 @@ def marker_library_checks(errors: list[str]) -> None:
     ids = [item.get("id") for item in markers]
     if len(ids) != len(set(ids)):
         errors.append("marker registry contains duplicate ids")
-    allowed_activations = {"auto_safe", "source_triggered", "manual", "wechat_fallback"}
+    allowed_activations = {"content_auto", "manual", "wechat_fallback"}
     required = {"id", "name_zh", "category", "activation", "wechat_support", "source_policy", "generated_text_policy", "density_group", "renderer", "sample", "source_fields"}
     schema = json.loads((ROOT / "schema/component_tree.schema.json").read_text(encoding="utf-8"))
     allowed = set(schema["$defs"]["component"]["properties"]["type"]["enum"])
-    showcase = (ROOT / "examples/v0.5.0-all-markers-showcase.html").read_text(encoding="utf-8") if (ROOT / "examples/v0.5.0-all-markers-showcase.html").exists() else ""
+    showcase = (ROOT / "examples/v0.5.2-all-markers-showcase.html").read_text(encoding="utf-8") if (ROOT / "examples/v0.5.2-all-markers-showcase.html").exists() else ""
     for item in markers:
         marker_id = item.get("id", "")
         if set(item) != required:
@@ -257,15 +257,20 @@ def compile_case(path: Path, errors: list[str], warnings: list[str], require_all
     if marker_report.get("gradient_emphasis_bar", 0) or marker_report.get("double_compare", 0) or marker_report.get("editorial_note", 0):
         errors.append(f"{label}: generative editorial components found: {marker_report}")
     source_length = len(re.sub(r"\s+", "", raw))
-    color_limit = 1 if source_length < 1200 else 2
+    color_limit = max(2, min(4, source_length // 500 + 1))
     if marker_report.get("color_block", 0) > color_limit:
         errors.append(f"{label}: too many source-text color blocks: {marker_report.get('color_block')} > {color_limit}")
     if marker_report.get("outlined_text_box", 0) > color_limit:
         errors.append(f"{label}: too many outlined text boxes: {marker_report.get('outlined_text_box')} > {color_limit}")
     heading_html = re.findall(r'<section[^>]*style="[^"]*margin:34px 0 17px 0[^"]*"[^>]*>.*?</section>', content_html, re.S)
     numbered_headings = re.findall(r'<p[^>]*style="[^"]*font-size:34px[^"]*"[^>]*>\s*\d{2}\s*</p>', content_html, re.S)
-    if plan.get("sections") and len(numbered_headings) < len(plan.get("sections", [])):
+    source_headings = plan.get("source_outline", [])
+    if source_headings and len(numbered_headings) != len(source_headings):
         errors.append(f"{label}: large numbered heading renderer missing")
+    if fidelity.get("source_headings") != fidelity.get("output_headings"):
+        errors.append(f"{label}: source/output heading mismatch")
+    if fidelity.get("generated_headings"):
+        errors.append(f"{label}: generated headings found: {fidelity['generated_headings']}")
     if any("border-left" in block for block in heading_html):
         errors.append(f"{label}: heading left border found")
     def check_source_blocks(component: dict) -> None:
@@ -340,6 +345,7 @@ def main() -> None:
             ROOT / "examples/visual_polish/bullet_spacing.md",
             ROOT / "examples/visual_polish/table_degrade.md",
             ROOT / "examples/visual_polish/attention_marker_article.md",
+            ROOT / "examples/regression/unicontext_heading_fidelity.md",
         ]
         for path in regression:
             compile_case(path, errors, warnings)
@@ -352,6 +358,57 @@ def main() -> None:
                 compile_case(path, errors, warnings)
     else:
         print("[3/3] full suite skipped")
+
+
+    content_case = ROOT / "examples/content_aware_article_visual.md"
+    if content_case.exists():
+        compiled = compile_case(content_case, errors, warnings)
+        roles = compiled["semantic_marker_report"].get("semantic_role_counts", {})
+        if len([k for k,v in roles.items() if v]) < 4:
+            errors.append("content-aware article must activate at least four semantic roles")
+        if compiled["semantic_marker_report"].get("library_total", 0) < 3:
+            errors.append("content-aware article must activate at least three library block markers")
+
+    unicontext_case = ROOT / "examples/regression/unicontext_heading_fidelity.md"
+    if unicontext_case.exists():
+        compiled = compile_case(unicontext_case, errors, warnings)
+        expected = [
+            "为什么负面内容总能赢",
+            "为什么身份开始压过品格",
+            "为什么所有人都在和世界冠军比较",
+            "为什么注意力变成了一场战争",
+            "问题不只是网络，而是生活失去了房间",
+        ]
+        actual = [section.get("heading", "") for section in compiled["article_plan"].get("sections", []) if section.get("heading")]
+        if actual != expected:
+            errors.append(f"unicontext heading fidelity regression failed: {actual}")
+        false_actions = [
+            "可以开一些只有彼此才懂的玩笑",
+            "可以跨越语言传播",
+            "可以在一秒钟内识别的信息",
+            "人们开始害怕误解",
+            "可以看到战争、股市、明星离婚、朋友旅行、同行成功和陌生人的愤怒",
+        ]
+        misclassified = [text for text in false_actions if semantic_marker_role(text) == "action"]
+        if misclassified:
+            errors.append(f"unicontext descriptive phrases misclassified as actions: {misclassified}")
+        true_actions = ["少看所有人的排行榜，多记录自己的长期变化。", "用主动选择的订阅，替代永远刷不完的推荐。"]
+        missing_actions = [text for text in true_actions if semantic_marker_role(text) != "action"]
+        if missing_actions:
+            errors.append(f"unicontext explicit actions not classified as actions: {missing_actions}")
+        htmlish = "# 测试文章<br>01<br>为什么负面内容总能赢<br>正文。<br>02 为什么身份开始压过品格<br>正文。"
+        htmlish_plan = compile_all(htmlish)[0]
+        htmlish_headings = [section.get("heading", "") for section in htmlish_plan.get("sections", []) if section.get("heading")]
+        if htmlish_headings != ["为什么负面内容总能赢", "为什么身份开始压过品格"]:
+            errors.append(f"HTML break heading transport regression failed: {htmlish_headings}")
+        _, _, _, unstructured_tree, _, _, _, unstructured_payload, unstructured_fidelity, _ = compile_all("# 无小标题文章\n\n正文只有普通段落。第二句话继续说明。")
+        if any(component.get("type") == "section_title" for root_component in unstructured_tree.get("components", []) for component in root_component.get("children", [])):
+            errors.append("unstructured source must not receive generated section headings")
+        manifest = unstructured_payload.get("runtime_manifest", {})
+        if manifest.get("runtime_version") != VERSION or manifest.get("content_fidelity_gate") != "executed":
+            errors.append(f"runtime manifest missing or stale: {manifest}")
+        if unstructured_fidelity.get("generated_headings"):
+            errors.append(f"unstructured source generated headings: {unstructured_fidelity['generated_headings']}")
 
     for warning in sorted(set(warnings)):
         print("WARNING:", warning)
