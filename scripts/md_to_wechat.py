@@ -27,7 +27,7 @@ from validate_content_html import validate as validate_content_html
 from visual_rhythm_validator import score as visual_rhythm_score
 
 FF = "-apple-system,BlinkMacSystemFont,'PingFang SC','Hiragino Sans GB','Microsoft YaHei','Helvetica Neue',Arial,sans-serif"
-RUNTIME_VERSION = "0.6.2"
+RUNTIME_VERSION = "0.6.4"
 
 # Mutable theme tokens. apply_theme() sets these before rendering.
 ACCENT = "#1746A2"
@@ -650,6 +650,12 @@ def build_article_plan(normalized: str, tables: list[list[list[str]]]) -> dict[s
     article_type = detect_article_type(title, source_body)
     sections: list[dict[str, Any]] = []
     pre_groups = merge_short_sentences(split_sentences("\n".join(preamble)))
+    pre_groups = [
+        group.split("::", 1)[1]
+        if group.startswith(("BULLET_ITEM::", "NUMBERED_ITEM::", "CAPTION::", "QUESTION_ITEM::", "PARALLEL_ITEM::"))
+        else group
+        for group in pre_groups
+    ]
 
     if outlined:
         for idx, item in enumerate(outlined[:12]):
@@ -876,6 +882,8 @@ SECTION_DIVIDERS = (
     "center_node_divider",
     "chapter_transition_divider",
 )
+CANONICAL_SECTION_HEADING = "chapter_double_rule"
+CANONICAL_SECTION_DIVIDER = "short_double_divider"
 
 
 def question_run(groups: list[str], start: int) -> list[str]:
@@ -966,12 +974,15 @@ def build_component_tree(plan: dict[str, Any], rhythm: dict[str, Any], visual: d
     active_roles = set(visual["semantic_marker_system"].get("active_roles", []))
 
     for lead in plan.get("lead_groups", []):
-        role = semantic_marker_role(lead)
-        children.append(comp("body_paragraph", "lead", {"text": lead, "marker_role": role}))
+        if lead.startswith(("IMAGE::", "TABLE::")):
+            continue
+        clean_lead = lead.split("::", 1)[1] if lead.startswith(("BULLET_ITEM::", "NUMBERED_ITEM::", "CAPTION::", "QUESTION_ITEM::", "PARALLEL_ITEM::")) else lead
+        role = semantic_marker_role(clean_lead)
+        children.append(comp("body_paragraph", "lead", {"text": clean_lead, "marker_role": role}))
 
     for section_index, section in enumerate(plan["sections"]):
         if section.get("heading"):
-            heading_type = SECTION_HEADING_MARKERS[section_index % len(SECTION_HEADING_MARKERS)]
+            heading_type = CANONICAL_SECTION_HEADING
             children.append(comp(heading_type, "section_heading", {
                 "index": section_index + 1,
                 "text": section["heading"],
@@ -1108,10 +1119,7 @@ def build_component_tree(plan: dict[str, Any], rhythm: dict[str, Any], visual: d
             idx += 1
 
         if section.get("heading") and section_index < len(plan["sections"]) - 1:
-            if sum(clen(group) for group in groups) >= 500:
-                children.append(comp("chapter_end_signature", "section_end", {"tone": section.get("semantic_tone", "data")}))
-            divider_type = SECTION_DIVIDERS[section_index % len(SECTION_DIVIDERS)]
-            children.append(comp(divider_type, "section_transition", {"tone": section.get("semantic_tone", "data")}))
+            children.append(comp(CANONICAL_SECTION_DIVIDER, "section_transition", {"tone": "data"}))
 
     if plan.get("references"):
         children.append(comp("references_block", "references", plan["references"]))
@@ -1576,13 +1584,16 @@ def build_section_visual_coverage(plan: dict[str, Any], tree: dict[str, Any]) ->
             data_marker_underuse_sections.append(row["section"])
     repeated = [index + 2 for index, (left, right) in enumerate(zip(signatures, signatures[1:])) if left and left == right]
     separators = [row["separator_types"][0] if row["separator_types"] else "" for row in rows]
-    repeated_separator_types = [index + 2 for index, (left, right) in enumerate(zip(separators, separators[1:])) if left and left == right]
+    repeated_separator_types: list[int] = []
+    heading_style_inconsistent_sections = [row["section"] for row in rows if row["heading"] and CANONICAL_SECTION_HEADING not in row["marker_types"]]
+    separator_style_inconsistent_sections = [row["section"] for row in rows[:-1] if row["separator_types"] != [CANONICAL_SECTION_DIVIDER]]
+    duplicate_chapter_separator_sections = [row["section"] for row in rows[:-1] if len(row["separator_types"]) != 1 or "chapter_end_signature" in row["marker_types"]]
     list_symbols = [symbol for row in rows for symbol in row["list_symbol_types"]]
     repeated_list_symbols = [index + 2 for index, (left, right) in enumerate(zip(list_symbols, list_symbols[1:])) if left == right]
     quote_types = [quote for row in rows for quote in row["quote_types"]]
     quote_style_repetition = len(quote_types) >= 2 and len(set(quote_types)) == 1
     runtime_marker_types = list(dict.fromkeys(marker for row in rows for marker in row["marker_types"]))
-    serious_issues = dry_sections + single_marker_only + repeated + no_separator_long_sections + repeated_separator_types + decorative_symbol_overload_sections + data_marker_underuse_sections
+    serious_issues = dry_sections + single_marker_only + repeated + no_separator_long_sections + decorative_symbol_overload_sections + data_marker_underuse_sections + heading_style_inconsistent_sections + separator_style_inconsistent_sections + duplicate_chapter_separator_sections
     return {
         "status": "pass" if not serious_issues and not quote_style_repetition else "fail",
         "sections": rows,
@@ -1591,6 +1602,12 @@ def build_section_visual_coverage(plan: dict[str, Any], tree: dict[str, Any]) ->
         "repeated_adjacent_signatures": repeated,
         "no_separator_long_sections": no_separator_long_sections,
         "repeated_separator_types": repeated_separator_types,
+        "macro_framework_consistent": not heading_style_inconsistent_sections and not separator_style_inconsistent_sections and not duplicate_chapter_separator_sections,
+        "canonical_heading_type": CANONICAL_SECTION_HEADING,
+        "canonical_separator_type": CANONICAL_SECTION_DIVIDER,
+        "heading_style_inconsistent_sections": heading_style_inconsistent_sections,
+        "separator_style_inconsistent_sections": separator_style_inconsistent_sections,
+        "duplicate_chapter_separator_sections": duplicate_chapter_separator_sections,
         "missing_micro_symbol_sections": missing_micro_symbol_sections,
         "repeated_list_symbols": repeated_list_symbols,
         "unused_runtime_markers": [],

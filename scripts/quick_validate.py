@@ -18,7 +18,7 @@ if str(SCRIPT_DIR) not in sys.path:
 
 from md_to_wechat import compile_all, render_component, semantic_marker_role, VISUAL_HEADING_TYPES
 
-VERSION = "0.6.2"
+VERSION = "0.6.4"
 REQUIRED = [
     "SKILL.md", "agents/openai.yaml", "README.md", "VERSION.md", "CHANGELOG.md", "pipeline.yaml",
     "scripts/md_to_wechat.py", "scripts/build_article.py", "scripts/sanitize_wechat_html.py",
@@ -26,7 +26,7 @@ REQUIRED = [
     "core/semantic_marker_system.md", "core/content_aware_article_visual.md", "core/content_fidelity_protocol.md", "core/wechat_component_contract.md", "core/section_visual_orchestrator.md",
     "references/semantic-marker-examples.md", "references/editorial-marker-catalog.md", "templates/theme-profiles.json", "templates/editorial-marker-registry.json",
     "scripts/editorial_marker_library.py", "scripts/render_marker_showcase.py", "core/editorial_marker_library.md",
-    "examples/v0.6.2-all-markers-showcase.html",
+    "examples/v0.6.4-all-markers-showcase.html",
     "schema/article_plan.schema.json", "schema/component_tree.schema.json", "schema/draftbox_payload.schema.json",
 ]
 
@@ -188,7 +188,7 @@ def marker_library_checks(errors: list[str]) -> None:
     required = {"id", "name_zh", "category", "activation", "wechat_support", "source_policy", "generated_text_policy", "density_group", "renderer", "sample", "source_fields"}
     schema = json.loads((ROOT / "schema/component_tree.schema.json").read_text(encoding="utf-8"))
     allowed = set(schema["$defs"]["component"]["properties"]["type"]["enum"])
-    showcase = (ROOT / "examples/v0.6.2-all-markers-showcase.html").read_text(encoding="utf-8") if (ROOT / "examples/v0.6.2-all-markers-showcase.html").exists() else ""
+    showcase = (ROOT / "examples/v0.6.4-all-markers-showcase.html").read_text(encoding="utf-8") if (ROOT / "examples/v0.6.4-all-markers-showcase.html").exists() else ""
     activation_counts = {name: sum(1 for item in markers if item.get("activation") == name) for name in allowed_activations}
     if activation_counts != {"content_auto": 73, "manual": 17, "wechat_fallback": 4}:
         errors.append(f"marker activation split invalid: {activation_counts}")
@@ -258,6 +258,9 @@ def compile_case(path: Path, errors: list[str], warnings: list[str], require_all
         errors.append(f"{label}: P0: {validation['P0']}")
     if validation.get("P1"):
         errors.append(f"{label}: P1: {validation['P1']}")
+    leaked_prefixes = [prefix for prefix in ("IMAGE::", "TABLE::", "BULLET_ITEM::", "NUMBERED_ITEM::", "CAPTION::", "QUESTION_ITEM::", "PARALLEL_ITEM::") if prefix in content_html]
+    if leaked_prefixes:
+        errors.append(f"{label}: structural prefix leaked into HTML: {leaked_prefixes}")
     if visual_report.get("visual_score", 0) < 88:
         errors.append(f"{label}: visual score below 88: {visual_report}")
     if "visual_plan" in tree:
@@ -439,6 +442,8 @@ def main() -> None:
         signatures = [row.get("visual_signature", "") for row in rows]
         if len(signatures) != len(set(signatures)):
             errors.append(f"unicontext repeated visual signatures: {signatures}")
+        if not coverage.get("macro_framework_consistent") or coverage.get("heading_style_inconsistent_sections") or coverage.get("separator_style_inconsistent_sections") or coverage.get("duplicate_chapter_separator_sections"):
+            errors.append(f"unicontext macro framework inconsistent: {coverage}")
 
     orchestrator_case = ROOT / "examples/regression/section_visual_orchestrator.md"
     if orchestrator_case.exists():
@@ -469,8 +474,7 @@ def main() -> None:
         for component in compiled["component_tree"].get("components", []):
             collect_full_symbol_types(component)
         required_new = {
-            "short_double_divider", "diamond_line_divider", "dot_chain_divider", "dual_tone_divider",
-            "center_node_divider", "chapter_transition_divider", "paragraph_lead_symbol",
+            "chapter_double_rule", "short_double_divider", "paragraph_lead_symbol",
             "key_sentence_bracket", "logic_progress_rail", "data_cluster_rail",
         }
         required_existing = {
@@ -484,7 +488,7 @@ def main() -> None:
         runtime_types = set(coverage.get("runtime_marker_types", []))
         if "data_badge" not in runtime_types:
             errors.append("full symbol runtime data badge missing")
-        if coverage.get("status") != "pass" or coverage.get("repeated_separator_types") or coverage.get("unused_runtime_markers") or coverage.get("decorative_symbol_overload_sections"):
+        if coverage.get("status") != "pass" or not coverage.get("macro_framework_consistent") or coverage.get("duplicate_chapter_separator_sections") or coverage.get("unused_runtime_markers") or coverage.get("decorative_symbol_overload_sections"):
             errors.append(f"full symbol coverage failed: {coverage}")
 
     for warning in sorted(set(warnings)):

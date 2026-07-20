@@ -1,12 +1,25 @@
-# Release Report — v0.6.2
+# Release Report — v0.6.4
 
 ## Release
 
-- Version: `0.6.2`
-- Name: `Visual Marker Integrity Hotfix`
+- Version: `0.6.4`
+- Name: `Unified Macro Framework`
 - Skill ID: `xingchen/wechat-editorial-skill`
 - Runtime entrypoint: `scripts/build_article.py`
 - Compiler: `scripts/md_to_wechat.py`
+
+## Unified macro framework
+
+- One chapter-heading structure per article: enforced.
+- One chapter-divider structure per article: enforced.
+- Duplicate section-end signature plus divider: removed.
+- Body-level semantic variety: retained.
+
+## Structural-prefix hotfix
+
+- `PARALLEL_ITEM::` leakage from intro `lead_groups`: fixed.
+- Structural prefixes found in compiled HTML: 0.
+- Real-world uni-context regression fidelity: pass.
 
 ## Hotfix audit
 
@@ -63,7 +76,7 @@
 
 ## Artifacts
 
-- Full marker showcase: `examples/v0.6.2-all-markers-showcase.html`
+- Full marker showcase: `examples/v0.6.4-all-markers-showcase.html`
 - Full symbol regression: `examples/regression/full_symbol_orchestration.md`
 - Section orchestrator regression: `examples/regression/section_visual_orchestrator.md`
 - Heading-fidelity regression: `examples/regression/unicontext_heading_fidelity.md`

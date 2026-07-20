@@ -1,8 +1,8 @@
 # 公众号排版-文章视觉
 
-> v0.6.2｜Visual Marker Integrity Hotfix — 把中文文章或 Markdown 排成微信公众号手机端安全 HTML 和草稿箱 JSON，原文逐字保真。
+> v0.6.4｜Unified Macro Framework — 把中文文章或 Markdown 排成微信公众号手机端安全 HTML 和草稿箱 JSON，原文逐字保真。
 
-[![Version](https://img.shields.io/badge/version-0.6.2-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.6.4-blue)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Markers](https://img.shields.io/badge/markers-94-orange)](templates/editorial-marker-registry.json)
 [![Validation](https://img.shields.io/badge/validation-release%20PASS-brightgreen)](RELEASE_REPORT.md)
@@ -43,7 +43,7 @@
   </tr>
 </table>
 
-> 完整 94 标识渲染图鉴：[🌐 在线预览](https://yxxx6666.github.io/wechat-editorial-skill/examples/v0.6.2-all-markers-showcase.html) ｜ [📄 源文件](examples/v0.6.2-all-markers-showcase.html)
+> 完整 94 标识渲染图鉴：[🌐 在线预览](https://yxxx6666.github.io/wechat-editorial-skill/examples/v0.6.4-all-markers-showcase.html) ｜ [📄 源文件](examples/v0.6.4-all-markers-showcase.html)
 
 ---
 
@@ -160,7 +160,7 @@ python scripts/render_marker_showcase.py -o showcase.html
 | **元信息** | 8 | 作者、日期、阅读时间、来源… |
 
 > 完整标识注册表见 [`templates/editorial-marker-registry.json`](templates/editorial-marker-registry.json)
-> 全标识渲染图鉴：[🌐 在线预览](https://yxxx6666.github.io/wechat-editorial-skill/examples/v0.6.2-all-markers-showcase.html)
+> 全标识渲染图鉴：[🌐 在线预览](https://yxxx6666.github.io/wechat-editorial-skill/examples/v0.6.4-all-markers-showcase.html)
 
 ---
 
@@ -277,7 +277,7 @@ wechat-editorial-skill/
 │   └── ...
 │
 ├── examples/                     # 示例文章
-│   ├── v0.6.2-all-markers-showcase.html  # 全标识图鉴
+│   ├── v0.6.4-all-markers-showcase.html  # 全标识图鉴
 │   ├── demo_article.md
 │   ├── before_after/                     # 改造前后对比
 │   ├── visual_polish/                    # 视觉打磨样例
@@ -290,6 +290,41 @@ wechat-editorial-skill/
 ---
 
 ## 版本历史
+
+### v0.6.4｜Unified Macro Framework
+
+- 同篇文章全部章节大标题统一为 `chapter_double_rule`
+- 全部章节边界统一为单个 `short_double_divider`
+- 移除长章节 `chapter_end_signature` 与分隔符叠加造成的双分隔
+- 正文标识仍按语义多样化，大框架与内容层彻底分离
+- 新增标题一致性、分隔符一致性和重复章节分隔三项发布阻断门禁
+- 保留 v0.6.3 的结构前缀零泄漏修复
+
+### v0.6.3｜Structural Prefix Leakage Hotfix
+
+- 修复 `lead_groups` 绕过前缀剥离导致 `PARALLEL_ITEM::` 泄漏到 HTML
+- 计划创建和组件渲染两个边界执行双重清理
+- 所有编译样例新增 7 类内部结构前缀零泄漏门禁
+
+### v0.6.2｜Visual Marker Integrity Hotfix
+
+- 修复实线下划线不可见、角线底线颜色问题
+- 修复字体栈引号破坏 HTML style 属性
+- 5 个 `content_auto` 标识状态校准
+- 94 标识全量回归
+
+### v0.6.1｜Complete Symbol Orchestration
+
+- 标识库由 84 个扩展到 94 个
+- 新增 6 个章节分隔符、段首微型符号、重点句角标
+- 新增逻辑递进轨道和数据组合轨道
+
+### v0.6.0｜Section Visual Orchestrator
+
+- 标识库由 72 个扩展到 84 个
+- 新增章节视觉编排器，每章自动组合视觉签名
+- 新增 `section_visual_coverage` 报告
+- 事实框改为蓝色
 
 ### v0.5.2｜Heading Fidelity Runtime Guard
 
@@ -370,4 +405,4 @@ MIT License — 见 [LICENSE](LICENSE)
 ## 反馈
 
 - [提交 Issue](https://github.com/yxxx6666/wechat-editorial-skill/issues)
-- [🌐 查看全标识图鉴（在线预览）](https://yxxx6666.github.io/wechat-editorial-skill/examples/v0.6.2-all-markers-showcase.html)
+- [🌐 查看全标识图鉴（在线预览）](https://yxxx6666.github.io/wechat-editorial-skill/examples/v0.6.4-all-markers-showcase.html)
